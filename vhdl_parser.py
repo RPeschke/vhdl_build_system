@@ -27,6 +27,7 @@ def vhdl_parser(FileName):
     ret = {}
     ret["FileName"] = FileName
     FileContent=load_file_witout_comments(FileName)
+    FileContent =FileContent.lower()
     entityDef=findDefinitionsInFile(FileContent,"entity","is")
     ret["entityDef"]=entityDef
 
