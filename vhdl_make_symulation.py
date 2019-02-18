@@ -2,11 +2,8 @@
 import sys
 
 import os,sys,inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir) 
-from  pyHelper.vhdl_parser import *
-from  pyHelper.vhdl_get_dependencies import *
+from  vhdl_parser import *
+from  vhdl_get_dependencies import *
 
 def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):  
     OutputPath = BuildFolder + entity + "/"
@@ -28,8 +25,6 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
         f.write('run 1000 ns; \n ')
         f.write('quit -f;  \n ')
 
-    with open(OutputBuild,'w') as f:
-        f.write("fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity)
 
 
     with open(OutputRun,'w',newline="") as f:
@@ -37,7 +32,7 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
         f.write("   cp -f $1 " +CSV_readFile+ "  \n")
         f.write("fi \n")
         f.write("cd " +OutputPath+ "  \n")
-        f.write("source ./make.sh \n")
+        f.write("fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n")
         f.write("./"+ outputExe + " -intstyle ise -tclbatch isim.cmd  \n")
         f.write("cd -  \n")
         f.write('if [ "$2" != "" ]; then \n')
@@ -60,7 +55,7 @@ def vhdl_make_simulation(Entity,BuildFolder = "build/"):
 if len(sys.argv) > 1:
     Entity = sys.argv[1]
 else:
-    Entity= "tb_fifo_cc2"
+    Entity= "tb_fifo"
 
 print('Entity: ' , Entity)
 vhdl_make_simulation(Entity)
