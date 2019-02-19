@@ -76,8 +76,8 @@ def load_file_witout_comments(FileName):
 
 
 def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
-    d = shelve.open("build/DependencyBD") 
-    flist = getListOfFiles(".","*.vhd")
+    d = shelve.open(DataBaseFile) 
+    flist = getListOfFiles(Folder,"*.vhd")
     for f in flist:
         print(f)
         ret= vhdl_parser(f)
