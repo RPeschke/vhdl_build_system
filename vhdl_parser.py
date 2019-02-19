@@ -38,10 +38,8 @@ def vhdl_parser(FileName):
     ret["packageUSE"]=packageUSE
 
     entityUSE_G=findDefinitionsInFile(FileContent,"entity","generic")
-    ret["entityUSE_G"]=entityUSE_G
-
     entityUSE=findDefinitionsInFile(FileContent,"entity","port")
-    ret["entityUSE"]=entityUSE
+    ret["entityUSE"]=entityUSE + entityUSE_G
     
     
     ret["Modified"] = os.path.getmtime(FileName)
@@ -68,7 +66,7 @@ def load_file_witout_comments(FileName):
     with open(FileName, "r") as f:
         contents =f.readlines()
         for x in contents:
-            FileContent+= x.split("--")[0].split("\n")[0] + " "
+            FileContent+= x.split("--")[0].split("\r\n")[0].split("\n")[0] + " "
     
     FileContent.replace("\t", "  ")
     return FileContent

@@ -48,10 +48,10 @@ def find_entity(d,Entity):
 
 def find_used_entities(d,FileName):
     ret = list()
-    e1 = d[FileName]['entityUSE_G']
+ 
     e2 = d[FileName]['entityUSE']
     
-    for r in e1 + e2:
+    for r in e2:
         if "work." in r:
             r = r.replace("work.", "")
             ret.append(r)
