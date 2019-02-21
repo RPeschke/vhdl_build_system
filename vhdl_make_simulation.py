@@ -34,6 +34,7 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
         f.write("   sed -i 's/,/ /g' " +CSV_readFile+ "  \n")    
         f.write("fi \n")
         f.write("cd " +OutputPath+ "  \n")
+        f.write("rm -rf " +outputExe+ "  \n")
         f.write("fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n")
         f.write("./"+ outputExe + " -intstyle ise -tclbatch isim.cmd  \n")
         f.write("cd -  \n")

@@ -18,6 +18,7 @@ def getListOfFiles(dirName, Pattern = '*.*'):
         if os.path.isdir(fullPath):
             allFiles = allFiles + getListOfFiles(fullPath,Pattern)
         elif Include_regEX.match(fullPath) :
+            fullPath = fullPath.replace("\\","/")
             allFiles.append(fullPath)
                 
     return allFiles
