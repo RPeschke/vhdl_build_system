@@ -75,6 +75,16 @@ def load_file_witout_comments(FileName):
 
 
 def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
+    try:
+        os.remove(DataBaseFile+".bak")
+        os.remove(DataBaseFile+".dat")
+        os.remove(DataBaseFile+".dir")  
+    except OSError:  
+        print ("removing of DBfile  %s failed" % DataBaseFile)
+    else:  
+        print ("Successfully removed DB file %s " % DataBaseFile)
+
+
     d = shelve.open(DataBaseFile) 
     flist = getListOfFiles(Folder,"*.vhd")
     for f in flist:

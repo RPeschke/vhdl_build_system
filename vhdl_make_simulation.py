@@ -22,7 +22,7 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
     with open(outputTCL,'w') as f:
         f.write('onerror ' + '{resume' + '} \n')
         f.write('wave add / \n ')
-        f.write('run 1000 ns; \n ')
+        f.write('run 2000 ns; \n ')
         f.write('quit -f;  \n ')
 
 
