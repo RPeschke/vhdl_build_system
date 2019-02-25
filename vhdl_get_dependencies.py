@@ -4,6 +4,18 @@ import fnmatch, re
 
 
 
+def try_make_dir(name,isRelativePath=True):
+    try:
+        if isRelativePath:
+            abs_name = os.getcwd()+"/" +name
+        else:
+            abs_name = name
+
+        os.mkdir(abs_name)
+    except OSError:  
+        print ("Creation of the directory %s failed" % name)
+    else:  
+        print ("Successfully created the directory %s " % name)
 
 
 def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
@@ -11,13 +23,7 @@ def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyB
         OutputFile =  "build/" +Entity+"/"+Entity+".prj"
         outPath = "build/" +Entity
     
-    try:  
-        pwd = os.getcwd()
-        os.mkdir(pwd+"/" +outPath)
-    except OSError:  
-        print ("Creation of the directory %s failed" % outPath)
-    else:  
-        print ("Successfully created the directory %s " % outPath)
+    try_make_dir(outPath)
     
     d = shelve.open(DataBaseFile)
     TB_entity = Entity
