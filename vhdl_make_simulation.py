@@ -77,6 +77,8 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
 
 
 
+
+
 def vhdl_make_simulation(Entity,BuildFolder = "build/"):
 
     
