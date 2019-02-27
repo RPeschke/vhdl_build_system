@@ -5,6 +5,19 @@ import os,sys,inspect
 from  vhdl_parser import *
 from  vhdl_get_dependencies import *
 
+def vhdl_create_file(FileName,Content=""):
+    with open(FileName,'w') as f:
+        f.write(Content)
+
+
+def make_TCL(name):
+    with open(name,'w',newline="") as f:
+        f.write('onerror ' + '{resume' + '} \n')
+        f.write('wave add / \n ')
+        f.write('run 2000 ns; \n ')
+        f.write('quit -f;  \n ')
+
+
 def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):  
     OutputPath = BuildFolder + entity + "/"
     OutputBuild = OutputPath + "make.sh"
@@ -13,17 +26,21 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
     
     CSV_readFile=OutputPath+entity+".csv" 
     CSV_writeFile=OutputPath+entity+"_out.csv" 
+    
+    vhdl_create_file(CSV_readFile)
+    vhdl_create_file(CSV_writeFile)
+    vhdl_create_file(OutputPath+"count.txt","0")
 
+
+
+
+    try_make_dir(OutputPath+"/backup")
     OutputRun = OutputPath + "run.sh"
 
     outputTCL = OutputPath + "isim.cmd"
+    make_TCL(outputTCL)
 
 
-    with open(outputTCL,'w') as f:
-        f.write('onerror ' + '{resume' + '} \n')
-        f.write('wave add / \n ')
-        f.write('run 2000 ns; \n ')
-        f.write('quit -f;  \n ')
 
 
 
@@ -37,8 +54,24 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
         f.write("rm -rf " +outputExe+ "  \n")
         f.write("fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n")
         f.write("./"+ outputExe + " -intstyle ise -tclbatch isim.cmd  \n")
+        
+        f.write("entity_name=\"" + entity +"\" \n")
+        f.write("inFile=\"" + entity +".csv\" \n")
+        f.write("outFile=\"" + entity +"_out.csv\" \n")
+        
+        f.write("Simcount=`cat count.txt`\n")
+        f.write("Simcount=\"$((Simcount + 1))\" \n")
+        f.write("echo \"$Simcount\" > count.txt \n")
+        f.write("backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n")
+        f.write("backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n")
+        f.write('echo "copy $inFile $backupIn"  \n')
+        f.write("cp -f $inFile  $backupIn \n")
+        f.write('echo "copy $outFile $backupOUT"  \n')
+        f.write("cp -f $outFile $backupOUT \n")
+
         f.write("cd -  \n")
         f.write('if [ "$2" != "" ]; then \n')
+        f.write('   echo "copy ' +CSV_writeFile+ '  $2"  \n')
         f.write("   cp -f " +CSV_writeFile+ " $2  \n")
         f.write("fi \n")
 
