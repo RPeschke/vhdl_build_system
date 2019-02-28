@@ -29,14 +29,11 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
     
     vhdl_create_file(CSV_readFile)
     vhdl_create_file(CSV_writeFile)
-    vhdl_create_file(OutputPath+"count.txt","0")
-
-
 
 
     try_make_dir(OutputPath+"/backup")
-    OutputRun = OutputPath + "run.sh"
 
+    OutputRun = OutputPath + "run.sh"
     outputTCL = OutputPath + "isim.cmd"
     make_TCL(outputTCL)
 
@@ -59,9 +56,9 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
         f.write("inFile=\"" + entity +".csv\" \n")
         f.write("outFile=\"" + entity +"_out.csv\" \n")
         
-        f.write("Simcount=`cat count.txt`\n")
-        f.write("Simcount=\"$((Simcount + 1))\" \n")
-        f.write("echo \"$Simcount\" > count.txt \n")
+        f.write("Simcount=`date +%Y%m%d%H%M%S`\n")
+       
+      
         f.write("backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n")
         f.write("backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n")
         f.write('echo "copy $inFile $backupIn"  \n')
