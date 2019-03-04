@@ -3,6 +3,9 @@ import shelve
 import fnmatch, re
 
 
+def remove_doublication_from_list(inList):
+    ret  = list(dict.fromkeys(inList))
+    return ret
 
 def try_make_dir(name,isRelativePath=True):
     try:
@@ -28,16 +31,34 @@ def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyB
     d = shelve.open(DataBaseFile)
     TB_entity = Entity
     eneties_used ={}
+  
     eneties_used[TB_entity] = find_entity(d,TB_entity)
-    eneties_used = make_depency_list(d,eneties_used ,find_used_entities,find_entity)
-    eneties_used = make_depency_list(d,eneties_used ,find_used_package,find_PacketDef)
+
+    old_length = 0
+    new_length = 1
+    while (new_length > old_length):
+        old_length = new_length
+        eneties_used = make_depency_list(d,eneties_used ,find_used_entities,find_entity)
+        eneties_used = make_depency_list(d,eneties_used ,find_used_package,find_PacketDef)
+        eneties_used = make_depency_list(d,eneties_used ,find_used_components,find_component)
+        new_length = len(eneties_used)
 
     lines =""
-    
 
+    fileList=list()
+    for k in eneties_used:
+        FileName =eneties_used[k].replace("\\","/") 
+        if FileName not in fileList:
+            fileList.append(FileName)
+        else:
+            print("doublication "+ FileName)
+            
+
+
+    
     with open(OutputFile,'w') as f:
-        for k in eneties_used:
-            lines = 'vhdl work "../../' + eneties_used[k].replace("\\","/") + '"\n'
+        for k in fileList:
+            lines = 'vhdl work "../../' + k + '"\n'
             f.write(lines)
 
 
@@ -47,6 +68,7 @@ def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyB
 def find_entity(d,Entity):
     for k in d.keys():
         for e in d[k]['entityDef']:
+            
             if e.lower() == Entity.lower():
                 return d[k]['FileName']
 
@@ -61,6 +83,26 @@ def find_used_entities(d,FileName):
         if "work." in r:
             r = r.replace("work.", "")
             ret.append(r)
+    return ret
+
+
+def find_component(d,component):
+    for k in d.keys():
+        for e in d[k]['entityDef']:
+            if e.lower() == component.lower():
+                return d[k]['FileName']
+
+    print("unable to find component " +component)
+
+def find_used_components(d,FileName):
+    ret = list()
+ 
+    e2 = d[FileName]['ComponentUSE']
+    
+    for r in e2:
+        r = r.replace("work.", "")
+        ret.append(r)
+
     return ret
 
 
@@ -90,10 +132,15 @@ def make_depency_list(d, eneties_used, find_used_func,find_def_func):
         old_length = new_length
         new_EntitesUsed = eneties_used.copy()
         for k in eneties_used:
+        
             entites_in_file = find_used_func(d,new_EntitesUsed[k])
             
             for e in entites_in_file:
-                new_EntitesUsed[e] = find_def_func(d,e)
+        
+                FileName = find_def_func(d,e)
+                if FileName:
+                    new_EntitesUsed[e] = FileName
+
 
         new_length = len(new_EntitesUsed)
         eneties_used = new_EntitesUsed.copy()

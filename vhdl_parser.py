@@ -52,8 +52,13 @@ def vhdl_parser(FileName):
 
     entityUSE_G=findDefinitionsInFile(FileContent,"entity","generic")
     entityUSE=findDefinitionsInFile(FileContent,"entity","port")
-    ret["entityUSE"]=entityUSE + entityUSE_G
+    entityUSE2=findDefinitionsInFile(FileContent,"entity","(")
+    ret["entityUSE"]=entityUSE + entityUSE_G +entityUSE2
     
+    ComponentUSE=findDefinitionsInFile(FileContent,"component","is")
+    ComponentUSE_G=findDefinitionsInFile(FileContent,"component","generic")
+    ComponentUSE_P=findDefinitionsInFile(FileContent,"component","port")
+    ret["ComponentUSE"]=ComponentUSE +ComponentUSE_G +ComponentUSE_P
     
     ret["Modified"] = os.path.getmtime(FileName)
     return ret
@@ -105,8 +110,11 @@ def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
     d = shelve.open(DataBaseFile) 
     flist = getListOfFiles(Folder,"*.vhd")
     for f in flist:
-        print(f)
-        ret= vhdl_parser(f)
-        d[f] = ret
+        if "build/" not in f:
+            print(f)
+            ret= vhdl_parser(f)
+            d[f] = ret
     
     d.close()   
+
+
