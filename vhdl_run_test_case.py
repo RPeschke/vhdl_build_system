@@ -19,7 +19,9 @@ def xml_find_or_defult(xml_note,xkey,xdefault):
         
 def size_of_file(FileName):
     with open(FileName) as f:
-        return  f.tell()
+        fcont = f.read()
+        return len(fcont)
+        #return  f.tell()
 
 def read_testcase_file(FileName,testResults,making_build_system = True,build_systems = list(),buildFolder = "build/", reparse = True):
     tree = ET.parse(FileName)
@@ -45,9 +47,9 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
         inputfile = filePath +"/" + str(child.find("inputfile").text).strip()
         referencefile = filePath+"/"+str(child.find("referencefile").text).strip()
         
-        tempoutfile = buildFolder + entity +"/" + name +".csv"
-
-        run_command = runPrefix + buildFolder +  entity +"/run_only.sh " +  inputfile + " " +tempoutfile +" > "+ buildFolder + entity +"/" +name +"_run.txt" + runsuffix
+        tempoutfile = buildFolder + entity +"/" + xml_find_or_defult(child,"tempoutfile",name+"_out_temp.csv") 
+        isimBatchFile = xml_find_or_defult(child,"tclbatch","") 
+        run_command = runPrefix + buildFolder +  entity +"/run_only.sh " +  inputfile + " " +tempoutfile +" " +isimBatchFile +" > "+ buildFolder + entity +"/" +name +"_run.txt" + runsuffix
         run_command = run_command.replace("\\","/")
         print("executing run command: " + run_command)
         x= os.system(run_command)
@@ -55,7 +57,7 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
         diff_tool = xml_find_or_defult(child,"difftool","diff")
 
         diff_file = buildFolder + entity +"/" +name +"_diff.txt"
-        diff_command = runPrefix +diff_tool+" " +  tempoutfile +" "+  referencefile + " > "+ diff_file +runsuffix 
+        diff_command = runPrefix +diff_tool+" " +  tempoutfile +" "+  referencefile + " > "+ diff_file +" 2>&1 " +runsuffix 
         diff_command = diff_command.replace("\\","/")
         print("executing diff command: "+diff_command)
         x=os.system(diff_command)
