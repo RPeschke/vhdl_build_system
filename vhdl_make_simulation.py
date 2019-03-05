@@ -42,8 +42,9 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
 
     handle_input_csv = 'if [ "$1" != "" ]; then \n' + '   echo "copy $1  ' +CSV_readFile+ '"  \n'+ "   cp -f $1 " +CSV_readFile+ "  \n" + "   sed -i 's/,/ /g' " +CSV_readFile+ "  \n"+ "fi \n"
     build_command = "rm -rf " +outputExe+ "  \n" + "fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n"
+    handle_isimBatchFile = 'if [ "$3" != "" ]; then \n  tclbatchfile=$1\nelse\n  tclbatchfile=isim.cmd\nfi\n\n'
 
-    run_and_backup = "./"+ outputExe + " -intstyle ise -tclbatch isim.cmd  \n" + "entity_name=\"" + entity +"\" \n" + "inFile=\"" + entity +".csv\" \n" + "outFile=\"" + entity +"_out.csv\" \n" + "Simcount=`date +%Y%m%d%H%M%S`\n"+ "backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n" + "backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n" + 'echo "copy $inFile $backupIn"  \n' + "cp -f $inFile  $backupIn \n"+ 'echo "copy $outFile $backupOUT"  \n' + "cp -f $outFile $backupOUT \n"             
+    run_and_backup = "./"+ outputExe + " -intstyle ise -tclbatch $tclbatchfile  \n" + "entity_name=\"" + entity +"\" \n" + "inFile=\"" + entity +".csv\" \n" + "outFile=\"" + entity +"_out.csv\" \n" + "Simcount=`date +%Y%m%d%H%M%S`\n"+ "backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n" + "backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n" + 'echo "copy $inFile $backupIn"  \n' + "cp -f $inFile  $backupIn \n"+ 'echo "copy $outFile $backupOUT"  \n' + "cp -f $outFile $backupOUT \n"             
     handle_output_csv = 'if [ "$2" != "" ]; then \n' + '   echo "copy ' +CSV_writeFile+ '  $2"  \n'+ "   cp -f " +CSV_writeFile+ " $2  \n" + "fi \n"
     
     with open(OutputBuild_only,'w',newline="") as f:
@@ -56,6 +57,7 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
         f.write(handle_input_csv)
 
         f.write("cd " +OutputPath+ "  \n")
+        f.write(handle_isimBatchFile)
         f.write(run_and_backup)
     
         f.write("cd -  \n")
@@ -67,6 +69,7 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
         f.write("cd " +OutputPath+ "  \n")
         f.write(build_command)
 
+        f.write(handle_isimBatchFile)
         f.write(run_and_backup)
       
 
