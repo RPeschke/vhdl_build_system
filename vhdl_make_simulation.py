@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 import sys
 
 import os,sys,inspect
@@ -34,53 +34,55 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
     try_make_dir(OutputPath+"/backup")
 
     OutputRun = OutputPath + "run.sh"
+    OutputBuild_only = OutputPath + "build_only.sh"
+    OutputRun_only = OutputPath + "run_only.sh"
+    
     outputTCL = OutputPath + "isim.cmd"
     make_TCL(outputTCL)
 
+    handle_input_csv = 'if [ "$1" != "" ]; then \n' + '   echo "copy $1  ' +CSV_readFile+ '"  \n'+ "   cp -f $1 " +CSV_readFile+ "  \n" + "   sed -i 's/,/ /g' " +CSV_readFile+ "  \n"+ "fi \n"
+    build_command = "rm -rf " +outputExe+ "  \n" + "fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n"
+
+    run_and_backup = "./"+ outputExe + " -intstyle ise -tclbatch isim.cmd  \n" + "entity_name=\"" + entity +"\" \n" + "inFile=\"" + entity +".csv\" \n" + "outFile=\"" + entity +"_out.csv\" \n" + "Simcount=`date +%Y%m%d%H%M%S`\n"+ "backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n" + "backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n" + 'echo "copy $inFile $backupIn"  \n' + "cp -f $inFile  $backupIn \n"+ 'echo "copy $outFile $backupOUT"  \n' + "cp -f $outFile $backupOUT \n"             
+    handle_output_csv = 'if [ "$2" != "" ]; then \n' + '   echo "copy ' +CSV_writeFile+ '  $2"  \n'+ "   cp -f " +CSV_writeFile+ " $2  \n" + "fi \n"
+    
+    with open(OutputBuild_only,'w',newline="") as f:
+        f.write("cd " +OutputPath+ "  \n")
+        f.write(build_command)
+        f.write("cd -  \n")
 
 
+    with open(OutputRun_only,'w',newline="") as f:
+        f.write(handle_input_csv)
+
+        f.write("cd " +OutputPath+ "  \n")
+        f.write(run_and_backup)
+    
+        f.write("cd -  \n")
+        f.write(handle_output_csv)
 
 
     with open(OutputRun,'w',newline="") as f:
-        f.write('if [ "$1" != "" ]; then \n')
-        f.write('   echo "copy $1  ' +CSV_readFile+ '"  \n')
-        f.write("   cp -f $1 " +CSV_readFile+ "  \n")
-        f.write("   sed -i 's/,/ /g' " +CSV_readFile+ "  \n")    
-        f.write("fi \n")
+        f.write(handle_input_csv)
         f.write("cd " +OutputPath+ "  \n")
-        f.write("rm -rf " +outputExe+ "  \n")
-        f.write("fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n")
-        f.write("./"+ outputExe + " -intstyle ise -tclbatch isim.cmd  \n")
-        
-        f.write("entity_name=\"" + entity +"\" \n")
-        f.write("inFile=\"" + entity +".csv\" \n")
-        f.write("outFile=\"" + entity +"_out.csv\" \n")
-        
-        f.write("Simcount=`date +%Y%m%d%H%M%S`\n")
-       
+        f.write(build_command)
+
+        f.write(run_and_backup)
       
-        f.write("backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n")
-        f.write("backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n")
-        f.write('echo "copy $inFile $backupIn"  \n')
-        f.write("cp -f $inFile  $backupIn \n")
-        f.write('echo "copy $outFile $backupOUT"  \n')
-        f.write("cp -f $outFile $backupOUT \n")
 
         f.write("cd -  \n")
-        f.write('if [ "$2" != "" ]; then \n')
-        f.write('   echo "copy ' +CSV_writeFile+ '  $2"  \n')
-        f.write("   cp -f " +CSV_writeFile+ " $2  \n")
-        f.write("fi \n")
+        f.write(handle_output_csv)
 
 
 
 
 
-def vhdl_make_simulation(Entity,BuildFolder = "build/"):
+def vhdl_make_simulation(Entity,BuildFolder = "build/",reparse=True):
 
     
     DataBaseFile=BuildFolder+"DependencyBD"
-    vhdl_parse_folder(Folder= ".",DataBaseFile=DataBaseFile)
+    if reparse:
+        vhdl_parse_folder(Folder= ".",DataBaseFile=DataBaseFile)
     vhdl_get_dependencies(Entity,DataBaseFile=DataBaseFile)
 
     vhdl_make_simulation_intern(Entity,BuildFolder)
