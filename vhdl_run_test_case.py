@@ -9,6 +9,7 @@ from  vhdl_test_cases_report_gen import *
 import pandas as pd
 from tabulate import tabulate
 from shutil import copyfile
+import argparse
 
 def get_ROI(df1,Headers,Lines):
     headers = Headers.text.split(",")
@@ -30,49 +31,54 @@ def get_ROI(df1,Headers,Lines):
     
     return dfOut
 
-
-runPrefix = 'ssh  xilinx "cd /home/ise/xilinx_share2/GitHub/klm_scrod_vas && '
-runsuffix = '" >  build/comandlinedumb.txt'
+class vhdl_build:
+    runPrefix = 'ssh  ssh_config "cd path_to_project && '
+    runsuffix = '" >  build/comandlinedumb.txt'
 
 def make_description(xNode,buildFolder):
     ret =xml_find_or_defult(xNode,"descitption","")
-    ROI=xNode.find("RegionOfInterest")
-    if ROI is None:
-        return ret
+    try:
+        
+        ROI=xNode.find("RegionOfInterest")
+        if ROI is None:
+            return ret
 
-    headers = ROI.find('Headers')
-    if headers is None:
-        return ret
+        headers = ROI.find('Headers')
+        if headers is None:
+            return ret
 
 
-    Lines = ROI.find('Lines')
-    if Lines is None:
-        return ret
+        Lines = ROI.find('Lines')
+        if Lines is None:
+            return ret
+        
+
+        name = xNode.get("name")
+        entity = str(xNode.find("entityname").text).strip()
+        tempoutfile = buildFolder+entity+"/" + xml_find_or_defult(xNode,"tempoutfile",name+"_out_temp.csv") 
+        df = pd.read_csv(tempoutfile,delimiter=' *; *',skipinitialspace=True)
+        df1=df.rename(columns=lambda x: x.strip())
+
+
+        dfOut = get_ROI(df1,headers,Lines)
+
     
+        
 
-    name = xNode.get("name")
-    entity = str(xNode.find("entityname").text).strip()
-    tempoutfile = buildFolder+entity+"/" + xml_find_or_defult(xNode,"tempoutfile",name+"_out_temp.csv") 
-    df = pd.read_csv(tempoutfile,delimiter=' *; *',skipinitialspace=True)
-    df1=df.rename(columns=lambda x: x.strip())
+        referencefile = buildFolder+entity+"/" + xml_find_or_defult(xNode,"referencefile",name+"_out_ref.csv") 
+        df = pd.read_csv(referencefile,delimiter=' *; *',skipinitialspace=True)
+        df1=df.rename(columns=lambda x: x.strip())
+        
+        df_ref = get_ROI(df1,headers,Lines)
 
+        ret += "\n ### Comparison Between Output File and Reference File\n\n"
+        dfOut.insert(len(list(dfOut)),'Out <==> Ref',' <==> ')
+        dfOut=dfOut.join(df_ref,rsuffix='_ref')
 
-    dfOut = get_ROI(df1,headers,Lines)
+        ret+= tabulate(dfOut, headers="keys", tablefmt="github") +"\n\n"
+    except :
+        ret += "\n error while running the test\n "
 
-   
-    
-
-    referencefile = buildFolder+entity+"/" + xml_find_or_defult(xNode,"referencefile",name+"_out_ref.csv") 
-    df = pd.read_csv(referencefile,delimiter=' *; *',skipinitialspace=True)
-    df1=df.rename(columns=lambda x: x.strip())
-    
-    df_ref = get_ROI(df1,headers,Lines)
-
-    ret += "\n ### Comparison Between Output File and Reference File\n\n"
-    dfOut.insert(len(list(dfOut)),'Out <==> Ref',' <==> ')
-    dfOut=dfOut.join(df_ref,rsuffix='_ref')
-
-    ret+= tabulate(dfOut, headers="keys", tablefmt="github") +"\n\n"
     return ret
 
     
@@ -115,7 +121,7 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
             vhdl_make_simulation(Entity=entity,BuildFolder = buildFolder,reparse=reparse)
             reparse=False
             build_systems.append(entity)
-            build_command = runPrefix + entity_folder +"/build_only.sh > " + entity_folder +"compile.txt" + runsuffix
+            build_command = vhdl_build.runPrefix + entity_folder +"/build_only.sh > " + entity_folder +"compile.txt" + vhdl_build.runsuffix
             print("executing build command: " + build_command)
             x= os.system(build_command)
 
@@ -128,7 +134,7 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
         copyfile(referencefile, entity_folder + str(child.find("referencefile").text).strip())
         tempoutfile = entity_folder + xml_find_or_defult(child,"tempoutfile",name+"_out_temp.csv") 
         isimBatchFile = xml_find_or_defult(child,"tclbatch","") 
-        run_command = runPrefix + entity_folder +"/run_only.sh " +  inputfile + " " +tempoutfile +" " +isimBatchFile +" > "+ entity_folder +name +"_run.txt" + runsuffix
+        run_command = vhdl_build.runPrefix + entity_folder +"/run_only.sh " +  inputfile + " " +tempoutfile +" " +isimBatchFile +" > "+ entity_folder +name +"_run.txt" + vhdl_build.runsuffix
         run_command = run_command.replace("\\","/")
         print("executing run command: " + run_command)
         x= os.system(run_command)
@@ -137,7 +143,7 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
         diff_tool = xml_find_or_defult(child,"difftool","diff")
 
         diff_file = entity_folder +name +"_diff.txt"
-        diff_command = runPrefix +diff_tool+" " +  tempoutfile +" "+  referencefile + " > "+ diff_file +" 2>&1 " +runsuffix 
+        diff_command = vhdl_build.runPrefix +diff_tool+" " +  tempoutfile +" "+  referencefile + " > "+ diff_file +" 2>&1 " +vhdl_build.runsuffix 
         diff_command = diff_command.replace("\\","/")
         print("executing diff command: "+diff_command)
         x=os.system(diff_command)
@@ -170,11 +176,21 @@ def make_rel_linux_path(FileName):
     return rel
 
 def main():
+    parser = argparse.ArgumentParser(description='Runs Test Cases')
+    parser.add_argument('--path', help='Path to where the build system is located',default="build/")
+    parser.add_argument('--test', help='specifies a specific cases to run. if not set it will run all test cases',default="")
+    args = parser.parse_args()
+    
     testResults = list()
     reparse = True
-    ReportOutName= "build/test.md"
-    if len(sys.argv) > 1:
-        fileName = sys.argv[1]
+    ReportOutName= args.path + "/tests.md"
+    tree = ET.parse(args.path+"/vhdl_build_setup.xml")
+    root = tree.getroot()
+    ssh_config = xml_find_or_defult(root.find("remote"), "ssh_config","")
+    remote_path = xml_find_or_defult(root.find("remote"), "path" ,"")
+    vhdl_build.runPrefix = 'ssh  ' + ssh_config + ' "cd ' + remote_path +' && '
+    if len(args.test) > 1:
+        fileName = args.test
         rel = make_rel_linux_path(fileName)
         build_systems = list()
         read_testcase_file(rel,testResults=testResults, build_systems=build_systems)
