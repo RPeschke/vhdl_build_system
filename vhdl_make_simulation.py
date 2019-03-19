@@ -10,16 +10,30 @@ def vhdl_create_file(FileName,Content=""):
         f.write(Content)
 
 
-def make_TCL(name,with_quit=True):
+def make_TCL(name,with_quit=True,runtime=2000):
     with open(name,'w',newline="") as f:
         f.write('onerror ' + '{resume' + '} \n')
         f.write('wave add / \n ')
-        f.write('run 2000 ns; \n ')
+        f.write('run ' + str(runtime) + ' ns; \n ')
         if with_quit:
             f.write('quit -f;  \n ')
 
-def get_handle_isim_script(isim_file="isim.cmd"):
-    handle_isimBatchFile = 'if [ "$3" != "" ]; then \n  tclbatchfile=$1\nelse\n  tclbatchfile=' + isim_file + '\nfi\n\n'
+def get_handle_isim_script(isim_file="isim.cmd",with_gui=False):
+    handle_isimBatchFile = ""
+    handle_isimBatchFile += 'if [ "$3" != "" ]; then\n'
+    handle_isimBatchFile += '  tclbatchfile=$1\n'
+    handle_isimBatchFile += 'else\n'
+    handle_isimBatchFile += '  typeset -i clock_speed=$(cat $clock_speed_file)\n'
+    handle_isimBatchFile += '  typeset -i line_count=$(wc -l < $inFile)\n'
+    handle_isimBatchFile += '  typeset -i runtime="$(($clock_speed * ($line_count+10)))"\n'
+    handle_isimBatchFile += '  tclbatchfile=' + isim_file + '\n'
+    handle_isimBatchFile += '  echo "onerror {' + 'resume}" > $tclbatchfile\n'    
+    handle_isimBatchFile += '  echo "wave add /" >> $tclbatchfile\n'
+    handle_isimBatchFile += '  echo "run $runtime ns;" >> $tclbatchfile\n'
+    if not with_gui:
+        handle_isimBatchFile += '  echo "quit -f;" >> $tclbatchfile\n'
+
+    handle_isimBatchFile += 'fi\n\n'
     return handle_isimBatchFile
 
 
@@ -32,26 +46,48 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
     use_GUI_command=" "
     if with_gui:
         outputTCL = "isim_gui.cmd"
-        make_TCL(OutputPath + outputTCL,with_quit=False)
+        #make_TCL(OutputPath + outputTCL,with_quit=False)
         use_GUI_command =" -gui "
         
     else:
         outputTCL =  "isim.cmd"
-        make_TCL(OutputPath + outputTCL)
+        #make_TCL(OutputPath + outputTCL)
 
     with open(FileName,'w',newline="") as f:
         if run:
-            handle_input_csv = 'if [ "$1" != "" ]; then \n' + '   echo "copy $1  ' +CSV_readFile+ '"  \n'+ "   cp -f $1 " +CSV_readFile+ "  \n" + "   sed -i 's/,/ /g' " +CSV_readFile+ "  \n"+ "fi \n"
+            handle_input_csv =''
+            handle_input_csv += 'clock_speed_file="clock_speed.txt"\n'
+            handle_input_csv += 'inFile_full_path="' + CSV_readFile + '"\n'
+            handle_input_csv += 'outFile_full_path="' + CSV_writeFile + '"\n'
+            handle_input_csv += "entity_name=\"" + entity +"\" \n" 
+            handle_input_csv += "inFile=\"" + entity +".csv\" \n" 
+            handle_input_csv += "outFile=\"" + entity +"_out.csv\" \n"     
+            handle_input_csv += 'if [ "$1" != "" ]; then \n'
+            handle_input_csv += '   echo "copy $1  $inFile_full_path"\n'
+            handle_input_csv += "   cp -f $1  $inFile_full_path \n"
+            handle_input_csv += "   sed -i 's/,/ /g' $inFile_full_path  \n"
+            handle_input_csv += "fi \n"
             f.write(handle_input_csv)
         
         f.write("cd " +OutputPath+ "  \n")
         if build:
-            build_command = "rm -rf " +outputExe+ "  \n" + "fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n"
+            build_command=""
+            build_command += "rm -rf " +outputExe+ "\n" 
+            build_command += "fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n"
             f.write(build_command)
 
         if run:
-            handle_isimBatchFile = get_handle_isim_script(outputTCL)
-            run_and_backup = "./"+ outputExe + " -intstyle ise -tclbatch $tclbatchfile  "+use_GUI_command +"\n" + "entity_name=\"" + entity +"\" \n" + "inFile=\"" + entity +".csv\" \n" + "outFile=\"" + entity +"_out.csv\" \n" + "Simcount=`date +%Y%m%d%H%M%S`\n"+ "backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n" + "backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n" + 'echo "copy $inFile $backupIn"  \n' + "cp -f $inFile  $backupIn \n"+ 'echo "copy $outFile $backupOUT"  \n' + "cp -f $outFile $backupOUT \n"             
+            handle_isimBatchFile = get_handle_isim_script(outputTCL,with_gui)
+            run_and_backup = ""
+            run_and_backup += "./"+ outputExe + " -intstyle ise -tclbatch $tclbatchfile  "+use_GUI_command +"\n" 
+
+            run_and_backup += "Simcount=`date +%Y%m%d%H%M%S`\n"
+            run_and_backup += "backupIn=\"backup/\"$entity_name\"_\"$Simcount\".csv\" \n" 
+            run_and_backup += "backupOUT=\"backup/\"$entity_name\"_\"$Simcount\"_out.csv\" \n" 
+            run_and_backup += 'echo "copy $inFile $backupIn"  \n' 
+            run_and_backup += "cp -f $inFile  $backupIn \n"
+            run_and_backup += 'echo "copy $outFile $backupOUT"  \n' 
+            run_and_backup += "cp -f $outFile $backupOUT \n"             
             f.write(handle_isimBatchFile)
             f.write(run_and_backup)
       
@@ -59,7 +95,11 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
         f.write("cd -  \n")
             
         if run:
-            handle_output_csv = 'if [ "$2" != "" ]; then \n' + '   echo "copy ' +CSV_writeFile+ '  $2"  \n'+ "   cp -f " +CSV_writeFile+ " $2  \n" + "fi \n"
+            handle_output_csv = ""
+            handle_output_csv += 'if [ "$2" != "" ]; then \n'
+            handle_output_csv += '   echo "copy $outFile_full_path  $2"  \n'
+            handle_output_csv += "   cp -f $outFile_full_path $2  \n" 
+            handle_output_csv += "fi \n"
     
             f.write(handle_output_csv)   
 
@@ -75,6 +115,7 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
     
     vhdl_create_file(CSV_readFile)
     vhdl_create_file(CSV_writeFile)
+    vhdl_create_file(OutputPath+"clock_speed.txt","10")
 
 
     try_make_dir(OutputPath+"/backup")
