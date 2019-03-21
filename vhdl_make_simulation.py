@@ -23,9 +23,9 @@ def get_handle_isim_script(isim_file="isim.cmd",with_gui=False):
     handle_isimBatchFile += 'if [ "$3" != "" ]; then\n'
     handle_isimBatchFile += '  tclbatchfile=$1\n'
     handle_isimBatchFile += 'else\n'
-    handle_isimBatchFile += '  typeset -i clock_speed=$(cat $clock_speed_file)\n'
-    handle_isimBatchFile += '  typeset -i line_count=$(wc -l < $inFile)\n'
-    handle_isimBatchFile += '  typeset -i runtime="$(($clock_speed * ($line_count+10)))"\n'
+    handle_isimBatchFile += '  clock_speed=$(cat $clock_speed_file)\n'
+    handle_isimBatchFile += '  line_count=$(wc -l < $inFile)\n'
+    handle_isimBatchFile += '  runtime="$(($clock_speed * ($line_count+10)))"\n'
     handle_isimBatchFile += '  tclbatchfile=' + isim_file + '\n'
     handle_isimBatchFile += '  echo "onerror {' + 'resume}" > $tclbatchfile\n'    
     handle_isimBatchFile += '  echo "wave add /" >> $tclbatchfile\n'
@@ -54,6 +54,7 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
         #make_TCL(OutputPath + outputTCL)
 
     with open(FileName,'w',newline="") as f:
+        f.write("#/bin/bash\n")
         if run:
             handle_input_csv =''
             handle_input_csv += 'clock_speed_file="clock_speed.txt"\n'
@@ -102,6 +103,9 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
             handle_output_csv += "fi \n"
     
             f.write(handle_output_csv)   
+
+    os.system("chmod +x "+FileName) 
+
 
 
 def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):  

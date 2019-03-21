@@ -89,6 +89,9 @@ def Display_and_run_command(command,RunText="Running the Following Command",OutP
 
 
 def xml_find_or_defult(xml_note,xkey,xdefault):
+    if xml_note is None:
+        return xdefault
+
     xkey = xml_note.find(xkey)
     if xkey is None:
         return xdefault
@@ -188,7 +191,14 @@ def main():
     root = tree.getroot()
     ssh_config = xml_find_or_defult(root.find("remote"), "ssh_config","")
     remote_path = xml_find_or_defult(root.find("remote"), "path" ,"")
-    vhdl_build.runPrefix = 'ssh  ' + ssh_config + ' "cd ' + remote_path +' && '
+    if ssh_config == "":
+        vhdl_build.runPrefix = ''
+        vhdl_build.runsuffix = ""
+
+    else:
+        vhdl_build.runPrefix = 'ssh  ' + ssh_config + ' "cd ' + remote_path +' && '
+        vhdl_build.runsuffix = '" >  build/comandlinedumb.txt'
+        
     if len(args.test) > 1:
         fileName = args.test
         rel = make_rel_linux_path(fileName)
