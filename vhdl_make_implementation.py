@@ -54,7 +54,7 @@ def vhdl_make_implementation(Entity, UCF_file):
         files = list()
         for x in f:
             spl = x.split('"')
-            if len(spl) > 1 and FileBaseNameNotInList(spl[1],IPcoreList) and FileBaseNameNotInList(spl[1],IPcoreList_in,1):
+            if len(spl) > 1 and FileBaseNameNotInList(spl[1],IPcoreList) and FileBaseNameNotInList(spl[1],IPcoreList_in,0):
                 files.append(spl[1])
         
     #print(files)
