@@ -16,6 +16,9 @@ parser = argparse.ArgumentParser(description='Make build scripts for vhdl_build_
 parser.add_argument('--path', help='Path to where the build system should be located',default="build")
 parser.add_argument('--ssh', help='ssh configuration used for running the Xilinx programs remotly',default=sshNotSet)
 parser.add_argument('--remotePath', help='Path on the remote machine that has the Xilinx programs', default="path_to_project")
+parser.add_argument('--protoBuild', help='Path to the proto build files', default="protoBuild/")
+
+
 args = parser.parse_args()
 
 
@@ -41,7 +44,7 @@ makeise_ = "makeise/"
 makeise.text = makeise_
 
 protoBuild = ET.SubElement(local, 'protoBuild')
-protoBuild_ ='protoBuild/'
+protoBuild_ =args.protoBuild
 protoBuild.text = protoBuild_
 #print(prettify(setup))
 
@@ -62,7 +65,14 @@ os.system("chmod +x ./make_simulation.sh")
 with open("make_implementation.sh","w",newline="") as f:
     f.write('#/bin/bash\n')
     f.write('echo "make ISE build system for $1"\n\n')
+  
+    f.write('cp "'+protoBuild_+'/proto_Project.in"   "./' + args.path +'/$1/"\n\n')
+    f.write('mv "./' + args.path +'/$1/proto_Project.in"  "./' + args.path +'/$1/$1_proto_Project.in"\n\n')
+
     f.write("python3 "+vhdl_build_system+"/vhdl_make_implementation.py $1 $2\n\n")
+ 
+
+ 
     f.write('cp "'+protoBuild_+'/simpleTemplate.xise.in"   "./' + args.path +'/$1/"\n\n')
     f.write('mv "./' + args.path +'/$1/simpleTemplate.xise.in"  "./' + args.path +'/$1/$1_simpleTemplate.xise.in"\n\n')
     f.write('python3 '+ makeise_ +'/makeise.py "' + args.path +'/$1/$1.in" "' + args.path +'/$1/$1.xise"\n')
