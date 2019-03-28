@@ -66,10 +66,12 @@ def vhdl_make_implementation(Entity, UCF_file):
         f.write("\n\n\n")
         f.write("[CoreGen Files]\n#Add XCO files. You can just list the filename, OR have the CoreGen files be\n#auto-generated as well by specifying the section name\n#fifoonly_adcfifo.xco = ADC FIFO CoreGen Setup")
         
-        
+        used_ip_cores =list()
         for x in IPcoreList:
             x = File_get_base_name(x)
-            f.write("./ipcore/"+ x+".cxo\n")
+            if x not in used_ip_cores:
+                used_ip_cores.append(x)
+                f.write("./ipcore/"+ x+".xco\n")
         f.write("\n\n\n")
 
         f.write("#[ADC FIFO CoreGen Setup]\n#InputFile = fifoonly_adcfifo.xco.in\n#input_depth = 8192\n#output_depth = CALCULATE $input_depth$ / 4\n#full_threshold_assert_value = CALCULATE $input_depth$ - 2\n#full_threshold_negate_value = CALCULATE $input_depth$ - 1\n##These are set to 16-bits for all systems... overkills most of the time\n#write_data_count_width = 16\n#read_data_count_width = 16\n#data_count_width = 16\n\n\n#[Setup File]\n#AVNET\n#UART_CLK = 40000000\n#UART_BAUD = 512000\n\n")
