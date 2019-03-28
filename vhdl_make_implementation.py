@@ -35,9 +35,9 @@ def vhdl_make_implementation(Entity, UCF_file):
 
     
     
-    IPcoreList = [x for x in IPcoreList if FileBaseNameNotInList(x+".in", IPcoreList_in,1)]
+    IPcoreList = [x for x in IPcoreList if FileBaseNameNotInList(x, IPcoreList_in,0)]
     print(IPcoreList)
-   
+    print(IPcoreList_in)
     outPath = Entity_build_path +'/coregen/'
     try_make_dir(outPath)
 
@@ -74,7 +74,7 @@ def vhdl_make_implementation(Entity, UCF_file):
             f.write(x+"\n")
         
         f.write("\n\n\n")
-        f.write("[CoreGen Files]\n#Add XCO files. You can just list the filename, OR have the CoreGen files be\n#auto-generated as well by specifying the section name\n#fifoonly_adcfifo.xco = ADC FIFO CoreGen Setup")
+        f.write("[CoreGen Files]\n#Add XCO files. You can just list the filename, OR have the CoreGen files be\n#auto-generated as well by specifying the section name\n#fifoonly_adcfifo.xco = ADC FIFO CoreGen Setup\n")
         
         used_ip_cores =list()
         for x in IPcoreList:
@@ -88,7 +88,7 @@ def vhdl_make_implementation(Entity, UCF_file):
             x1 = File_get_base_name(x,0)
             
             f.write(x1 + ".xco = " + x1 + "\n")
-
+        f.write("\n\n\n")
         for x in IPcoreList_in:
 
             x1 = File_get_base_name(x,0)
