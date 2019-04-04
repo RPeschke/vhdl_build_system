@@ -65,7 +65,7 @@ os.system("chmod +x ./make_simulation.sh")
 with open("make_implementation.sh","w",newline="") as f:
     f.write('#/bin/bash\n')
     f.write('echo "make ISE build system for $1"\n\n')
-    f.write("mkdir ./" +vhdl_build_system +"/$1/ \n\n")
+    f.write("mkdir ./" +args.path +"/$1/ \n\n")
     f.write('cp "'+protoBuild_+'/proto_Project.in"   "./' + args.path +'/$1/"\n\n')
     f.write('mv "./' + args.path +'/$1/proto_Project.in"  "./' + args.path +'/$1/$1_proto_Project.in"\n\n')
 
