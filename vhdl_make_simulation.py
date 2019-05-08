@@ -70,6 +70,15 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
             handle_input_csv += "fi \n"
             f.write(handle_input_csv)
         
+        if run:
+            remove_output_csv = ""
+            remove_output_csv += 'if [ "$2" != "" ]; then \n'
+            remove_output_csv += '   echo "remove old output file $2"  \n'
+            remove_output_csv += "   rm -f $2  \n" 
+            remove_output_csv += "fi \n"
+    
+            f.write(remove_output_csv)  
+
         f.write("cd " +OutputPath+ "  \n")
         if build:
             build_command=""
