@@ -56,7 +56,7 @@ def make_description(xNode,buildFolder):
         name = xNode.get("name")
         entity = str(xNode.find("entityname").text).strip()
         tempoutfile = buildFolder+entity+"/" + xml_find_or_defult(xNode,"tempoutfile",name+"_out_temp.csv") 
-        df = pd.read_csv(tempoutfile,delimiter=' *; *',skipinitialspace=True)
+        df = pd.read_csv(tempoutfile,delimiter=' *; *',skipinitialspace=True, engine='python')
         df1=df.rename(columns=lambda x: x.strip())
 
 
@@ -66,7 +66,7 @@ def make_description(xNode,buildFolder):
         
 
         referencefile = buildFolder+entity+"/" + xml_find_or_defult(xNode,"referencefile",name+"_out_ref.csv") 
-        df = pd.read_csv(referencefile,delimiter=' *; *',skipinitialspace=True)
+        df = pd.read_csv(referencefile,delimiter=' *; *',skipinitialspace=True, engine='python')
         df1=df.rename(columns=lambda x: x.strip())
         
         df_ref = get_ROI(df1,headers,Lines)
@@ -108,7 +108,7 @@ def size_of_file(FileName):
         return len(fcont)
         #return  f.tell()
 
-def read_testcase_file(FileName,testResults,making_build_system = True,build_systems = list(),buildFolder = "build/", reparse = True):
+def read_testcase_file(FileName,testResults,making_build_system = True,build_systems = list(),buildFolder = "build/", reparse = True,update_reference_file=False):
     tree = ET.parse(FileName)
     root = tree.getroot()
     
@@ -151,6 +151,8 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
         print("executing diff command: "+diff_command)
         x=os.system(diff_command)
         
+        if update_reference_file:
+            copyfile(tempoutfile, referencefile)
 
         ret = {}
         ret["name"] = name
@@ -182,8 +184,11 @@ def main():
     parser = argparse.ArgumentParser(description='Runs Test Cases')
     parser.add_argument('--path', help='Path to where the build system is located',default="build/")
     parser.add_argument('--test', help='specifies a specific cases to run. if not set it will run all test cases',default="")
+    parser.add_argument('--update', help='Update the reference output file. use --update true to update a test case.',default = "False")
+
     args = parser.parse_args()
     
+    doUpdate = args.update != "False"
     testResults = list()
     reparse = True
     ReportOutName= args.path + "/tests.md"
@@ -203,7 +208,7 @@ def main():
         fileName = args.test
         rel = make_rel_linux_path(fileName)
         build_systems = list()
-        read_testcase_file(rel,testResults=testResults, build_systems=build_systems)
+        read_testcase_file(rel,testResults=testResults, build_systems=build_systems,update_reference_file=doUpdate)
         base=os.path.basename(rel)
         ReportOutName =  os.path.splitext(base)[0]+".md"
         
@@ -214,7 +219,7 @@ def main():
         build_systems = list()
         for f in flist:
             rel = make_rel_linux_path(f)
-            reparse = read_testcase_file(rel,testResults=testResults,build_systems=build_systems,reparse=reparse)
+            reparse = read_testcase_file(rel,testResults=testResults,build_systems=build_systems,reparse=reparse,update_reference_file=doUpdate)
 
     #print(testResults)
     vhdl_test_cases_report_gen(ReportOutName,testResults)

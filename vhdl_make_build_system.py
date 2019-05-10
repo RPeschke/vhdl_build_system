@@ -96,6 +96,20 @@ with open("run_test_cases.sh","w",newline="") as f:
     f.write('#/bin/bash\n')
     f.write('echo "Runing test case  \'$1\'"\n\n')
     f.write('# $1 : Test Case File\n')
-    f.write('python3 ' + vhdl_build_system +'/vhdl_run_test_case.py $1\n')
+    f.write('if [ "$1" != "" ]; then \n')
+    f.write("  python3 "+ vhdl_build_system + "/vhdl_run_test_case.py --test $1 \n")
+    f.write('else \n')
+    f.write('  python3 ' + vhdl_build_system +'/vhdl_run_test_case.py \n')
+    f.write('fi \n')
+
+with open("update_test_cases.sh","w",newline="") as f:
+    f.write('#/bin/bash\n')
+    f.write('echo "Runing test case  \'$1\'"\n\n')
+    f.write('# $1 : Test Case File\n')
+    f.write('if [ "$1" != "" ]; then \n')
+    f.write("  python3 "+ vhdl_build_system + "/vhdl_run_test_case.py --test $1 --update True \n")
+    f.write('else \n')
+    f.write('  python3 ' + vhdl_build_system +'/vhdl_run_test_case.py --update True \n')
+    f.write('fi \n')
 
 os.system("chmod +x ./run_test_cases.sh") 
