@@ -1,7 +1,7 @@
 from  vhdl_parser import *
 from  vhdl_get_dependencies import *
 from  vhdl_get_entity_def import *
-
+import argparse
 
 
 def get_shortend_typename(portdef):
@@ -15,12 +15,12 @@ def get_shortend_typename(portdef):
 
 def get_reader_entity_name(entityDef):
     et_name = entityDef[0]["name"]
-    reader_entity = et_name +"_reader_entity"
+    reader_entity = et_name +"_reader_et"
     return reader_entity
 
 def get_writer_entity_name(entityDef):
     et_name = entityDef[0]["name"]
-    reader_entity = et_name +"_writer_entity"
+    reader_entity = et_name +"_writer_et"
     return reader_entity
 
 def get_reader_pgk_name(entityDef):
@@ -121,7 +121,7 @@ def make_read_entity(entityDef,path="."):
         f.write("csv_r :entity  work.csv_read_file \n    generic map (\n       FileName =>  FileName, \n       NUM_COL => NUM_COL,\n       useExternalClk=>true,\n       HeaderLines =>  2\n       )\n        port map(\n       clk => clk,\n       Rows => csv_r_data\n       );\n\n\n")
         index = 0
         for x in ports:
-            f.write("integer_to_" + get_shortend_typename(x) + '(data_int(' +str(index) +'), data.' + x["name"] + ') );\n')
+            f.write("integer_to_" + get_shortend_typename(x) + '(csv_r_data(' +str(index) +'), data.' + x["name"] + ');\n')
             index+=1 
 
         f.write("end Behavioral;")
@@ -134,7 +134,7 @@ def make_write_entity(entityDef,path="."):
     et_name = entityDef[0]["name"]
     write_entity_file = path+"/"+et_name +"_" + suffix +"_entity.vhd"
     write_entity = get_writer_entity_name(entityDef)
-    write_pgk = et_name +"_" + suffix +"_pgk"
+    write_pgk = get_writer_pgk_name(entityDef)
 
     with open(write_entity_file,'w',newline= "") as f:
         f.write(get_includes())
@@ -170,10 +170,10 @@ def make_write_entity(entityDef,path="."):
 
 def make_test_bench_for_test_cases(entityDef,path="."):
     et_name = entityDef[0]["name"]
-    tb_entity_file = path+"/tb_"+et_name +".vhd"
-    tb_entity = "tb_" + et_name 
-    write_pgk = et_name +"_" + "write_pgk"
-    reader_pgk = et_name +"_" + "reader_pgk"
+    tb_entity_file = path+"/"+et_name +"_tb_csv.vhd"
+    tb_entity =  et_name +"_tb_csv"
+    write_pgk = get_writer_pgk_name(entityDef)
+    reader_pgk = get_reader_pgk_name(entityDef)
 
     with open(tb_entity_file,'w',newline= "") as f:
         f.write(get_includes())
@@ -201,15 +201,27 @@ def make_test_bench_for_test_cases(entityDef,path="."):
         ports = remove_clock_from_ports(ports)    
         f.write("DUT :  entity work." + et_name + " port map(\n  clk => clk")
         for x in ports:
-            f.write(";\n  " + x["name"] +" => data_out." + x["name"] )
+            f.write(",\n  " + x["name"] +" => data_out." + x["name"] )
         
         f.write("\n);\nend behavior;\n")
 
+def main():
+    parser = argparse.ArgumentParser(description='Creates Test benches for a given entity')
+    parser.add_argument('--OutputPath', help='Path to where the test bench should be created',default=".")
+    parser.add_argument('--InputFile', help='File to the Test bench',default="klm_scint/source/Readout_Simple.vhd")
+    
 
-entityDef = vhdl_get_entity_def("klm_scint/source/Readout_Simple.vhd")
-write_pgk = make_package_file(entityDef,"none","write")
-read_pgk = make_package_file(entityDef,"out","read")
+    args = parser.parse_args()
+    
+    entityDef = vhdl_get_entity_def(args.InputFile)
+    make_package_file(entityDef,"none","write",args.OutputPath)
+    make_package_file(entityDef,"out","read",args.OutputPath)
 
-make_read_entity(entityDef)
-make_write_entity(entityDef)
-make_test_bench_for_test_cases(entityDef)
+    make_read_entity(entityDef,args.OutputPath)
+    make_write_entity(entityDef,args.OutputPath)
+    make_test_bench_for_test_cases(entityDef,args.OutputPath)
+
+
+
+if __name__== "__main__":
+    main()
