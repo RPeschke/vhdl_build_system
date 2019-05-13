@@ -1,10 +1,105 @@
-from  vhdl_parser import *
-from  vhdl_get_dependencies import *
-from  vhdl_get_entity_def import *
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir) 
+
+from  vhdl_build_system.vhdl_parser import *
+from  vhdl_build_system.vhdl_get_dependencies import *
+from  vhdl_build_system.vhdl_get_entity_def import *
 import argparse
 
+from vhdl_build_system.vhdl_get_type_def_from_db import *
+
+knownName= list()
+
+def isPrimitiveType(typeName):
+    if typeName == "std_logic":
+        return True
+    elif typeName == "std_logic_vector":
+        return True
+    
+    return False
+
+def expand_types_records(portDef,TypeDef):
+    ret = list()
+    for x in TypeDef['record']:
+        e = {}
+        e['name'] = portDef['name'] + "." + x['name']
+        e['type'] = x['type'] 
+        e['InOut'] =  'in'
+        e['default'] =  None
+        ret.append(e)
+
+
+    return ret
+
+def input_get_constant(numStr):
+    try:
+        i0 = int(numStr)
+    except:
+        for x in knownName:
+            if x["name"] == numStr.strip():
+                i0 = x["value"]
+                return i0
+
+
+        i0 = input("unkown Variable: "+ numStr+"\nplease enter its value:")
+        i0 =input_get_constant(i0)
+        newName = {}
+        newName["name"] = numStr.strip()
+        newName["value"] = i0
+        knownName.append(newName)
+
+    return i0
+def expand_types_arrays(portDef,TypeDef):
+    ret = list()
+    array_length = TypeDef["array_length"]
+    sp = array_length.split("downto")
+    if len(sp) == 1:
+         sp = array_length.split("to")
+    
+    i0 = input_get_constant(sp[0])
+    i1 = input_get_constant(sp[1])
+    
+    max_index = max(i0,i1)
+
+    min_index = min(i0,i1)
+
+    
+    for x in range(min_index,max_index):
+        e = {}
+        e['name'] = portDef['name'] + "(" + str(x) +")"
+        
+        e['type'] = TypeDef['BaseType']
+        e['InOut'] =  'in'
+        e['default'] =  None
+        ret.append(e)
+    return ret
+
+def expand_types(ports):
+    ret = list()
+    for p in ports:
+        if isPrimitiveType(p["type"]):
+            ret.append(p)
+        else:
+            type_def = get_type_from_name(p["type"])
+            
+            if type_def == None:
+                continue
+            elif type_def["vhdl_type"] == "record":
+                array = expand_types_records(p,type_def)
+                for a in array:
+                    ret.append(a)
+            elif type_def["vhdl_type"] == "array":
+                array = expand_types_arrays(p,type_def)
+                for a in array:
+                    ret.append(a)
+                
+                
+    return ret
 
 def get_shortend_typename(portdef):
+   
     ty = portdef["type"]
     if ty == "std_logic":
         return "sl"
@@ -62,6 +157,7 @@ def make_package_file(entityDef,inOutFilter,suffix,path="."):
         f.write("package "+ write_pgk +" is\n")
         f.write("type "+ write_record +" is record \n")
         ports = entityDef[0]["port"]
+      
         for x in ports:
             if inOutFilter in x["InOut"]:
                 continue
@@ -95,6 +191,10 @@ def remove_clock_from_ports(ports):
     ports = [x for x in ports if x["name"] != "clk"]
     return ports
 
+def port_to_plain_text(portName):
+    ret = portName.replace(".","_").replace("(","_").replace(")","")
+    return ret
+
 def make_read_entity(entityDef,path="."):
     suffix = "reader"
     inOut = "out"
@@ -115,12 +215,13 @@ def make_read_entity(entityDef,path="."):
         ports = entityDef[0]["port"]
         ports = [x for x in ports if x["InOut"] == "in"]
         ports = remove_clock_from_ports(ports)
-        f.write("constant  NUM_COL : integer := "+ str(len(ports)) +";\n")
+        ports_ex = expand_types(ports)
+        f.write("constant  NUM_COL : integer := "+ str(len(ports_ex)) +";\n")
         f.write("signal csv_r_data : t_integer_array(NUM_COL downto 0)  := (others=>0)  ;")
         f.write("begin\n\n")
         f.write("csv_r :entity  work.csv_read_file \n    generic map (\n       FileName =>  FileName, \n       NUM_COL => NUM_COL,\n       useExternalClk=>true,\n       HeaderLines =>  2\n       )\n        port map(\n       clk => clk,\n       Rows => csv_r_data\n       );\n\n\n")
         index = 0
-        for x in ports:
+        for x in ports_ex:
             f.write("integer_to_" + get_shortend_typename(x) + '(csv_r_data(' +str(index) +'), data.' + x["name"] + ');\n')
             index+=1 
 
@@ -148,30 +249,36 @@ def make_write_entity(entityDef,path="."):
         f.write("architecture Behavioral of " + write_entity  +" is \n")
         ports = entityDef[0]["port"]
         ports = remove_clock_from_ports(ports)
-        f.write("constant  NUM_COL : integer := " + str(len(ports))  +" ;\n")
+        ports_ex = expand_types(ports)
+        f.write("constant  NUM_COL : integer := " + str(len(ports_ex))  +" ;\n")
         f.write("signal data_int : t_integer_array(NUM_COL downto 0)  := (others=>0)  ;\nbegin\n\n")
         f.write("csv_w : entity  work.csv_write_file \n")
         f.write('    generic map (\n         FileName => FileName,\n         HeaderLines=> "')
         start = ""
-        for x in ports:
-            f.write(start + x["name"])
+        for x in ports_ex:
+            
+            f.write(start + port_to_plain_text(x["name"]))
             start=", "
         
         f.write('",\n         NUM_COL =>   NUM_COL ) \n    port map(\n         clk => clk, \n         Rows => data_int\n    );\n\n')
         
         index = 0
-        for x in ports:
+        for x in ports_ex:
             f.write(get_shortend_typename(x) + '_to_integer(data.' + x["name"] + ', data_int(' +str(index) +') );\n')
             index+=1 
             
         f.write("end Behavioral;")
         
-        
+def get_test_bench_file_basename(entityDef):
+    et_name = entityDef[0]["name"]  
+    tb_entity =  et_name +"_tb_csv"     
+    return tb_entity
+
 
 def make_test_bench_for_test_cases(entityDef,path="."):
     et_name = entityDef[0]["name"]
     tb_entity_file = path+"/"+et_name +"_tb_csv.vhd"
-    tb_entity =  et_name +"_tb_csv"
+    tb_entity = get_test_bench_file_basename(entityDef)
     write_pgk = get_writer_pgk_name(entityDef)
     reader_pgk = get_reader_pgk_name(entityDef)
 
@@ -205,10 +312,66 @@ def make_test_bench_for_test_cases(entityDef,path="."):
         
         f.write("\n);\nend behavior;\n")
 
+
+def make_sim_csv_file(entityDef,FileName,FilterOut):
+    et_name = entityDef[0]["name"]
+    ports = entityDef[0]["port"]
+    ports = [x for x in ports if x["InOut"] != FilterOut]
+    ports = remove_clock_from_ports(ports)
+    ports_ex = expand_types(ports)
+    if FilterOut == "out":
+        delimiter=", "
+    else:
+        delimiter="; "
+    
+    with open(FileName,"w",newline="") as f:
+   
+        start = ""
+        for x in ports_ex:
+            
+            f.write(start + port_to_plain_text(x["name"]))
+            start = delimiter
+            
+        f.write('\n')
+        
+        for i in range(100):
+            start = ""
+            for x in ports_ex:
+                f.write(start + "0")
+                start = delimiter
+                
+            f.write('\n')
+
+
+def make_xml_test_case(entityDef,path):
+    et_name = entityDef[0]["name"]
+    sim_out_filename = path+"/"+get_test_bench_file_basename(entityDef)+".testcase.xml"
+    with open(sim_out_filename,"w",newline="") as f:
+        f.write('<?xml version="1.0"?>\n')
+        f.write("<testcases>\n")
+        f.write('  <testcase name="' + et_name+'empty_test01">\n')
+        f.write('    <descitption> autogenerated empty test case</descitption>\n')
+        sim_in_filename =get_test_bench_file_basename(entityDef)+".csv"
+        f.write('    <inputfile>' + sim_in_filename+'</inputfile>\n')
+        sim_out_filename = get_test_bench_file_basename(entityDef)+"_out.csv"
+        f.write('    <referencefile>' + sim_out_filename+'</referencefile>\n')
+        f.write('    <entityname>' + et_name+'</entityname>\n')
+        f.write('    <tc_type>Unclear</tc_type>\n')
+        f.write('    <difftool>diff</difftool>\n')
+        f.write('    <RegionOfInterest>\n')
+        f.write('      <Headers>\n      </Headers>\n')
+        f.write('      <Lines>\n      </Lines>\n')
+        f.write('    </RegionOfInterest>\n')
+        f.write('  </testcase>\n</testcases>\n')
+        
+
+
+        
+
 def main():
     parser = argparse.ArgumentParser(description='Creates Test benches for a given entity')
-    parser.add_argument('--OutputPath', help='Path to where the test bench should be created',default=".")
-    parser.add_argument('--InputFile', help='File to the Test bench',default="klm_scint/source/Readout_Simple.vhd")
+    parser.add_argument('--OutputPath', help='Path to where the test bench should be created',default="./test/")
+    parser.add_argument('--InputFile', help='File containing the Test bench',default="klm_scint/source/Readout_Simple.vhd")
     
 
     args = parser.parse_args()
@@ -220,7 +383,13 @@ def main():
     make_read_entity(entityDef,args.OutputPath)
     make_write_entity(entityDef,args.OutputPath)
     make_test_bench_for_test_cases(entityDef,args.OutputPath)
-
+    sim_in_filename = args.OutputPath+"/"+get_test_bench_file_basename(entityDef)+".csv"
+    
+    make_sim_csv_file(entityDef,sim_in_filename,"out")
+    sim_out_filename = args.OutputPath+"/"+get_test_bench_file_basename(entityDef)+"_out.csv"
+    make_sim_csv_file(entityDef,sim_out_filename,"none")
+    
+    make_xml_test_case(entityDef,args.OutputPath)
 
 
 if __name__== "__main__":

@@ -1,8 +1,13 @@
 #!/usr/bin/python
 import sys
-
 import os,sys,inspect
-from  vhdl_parser import *
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir) 
+import os,sys,inspect
+#from  vhdl_parser import *
+from vhdl_build_system.vhdl_parser import *
+
 from  vhdl_get_dependencies import *
 from  vhdl_get_entity_def import *
 
@@ -52,10 +57,12 @@ def vhdl_get_type_def_record(rawText):
     return ret
 
 def vhdl_get_type_def_enum(rawText):
-    pass
-def vhdl_get_type_def(FileName):
+    ret = {}
+    ret["name"]='unsopported type'
+    return ret
 
-    fc = load_file_witout_comments(FileName)
+def vhdl_get_type_def_from_string(FileContent):
+    fc =FileContent
     candidates =  fc.split(" type")
     type_list = list()
     for x in candidates:
@@ -77,6 +84,12 @@ def vhdl_get_type_def(FileName):
 
     return type_list
 
+
+def vhdl_get_type_def(FileName):
+
+    fc = load_file_witout_comments(FileName)
+    ret = vhdl_get_type_def_from_string(fc)
+    return ret
 
 
 

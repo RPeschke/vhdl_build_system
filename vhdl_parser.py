@@ -2,6 +2,8 @@ import os
 import shelve
 import fnmatch, re
 
+from vhdl_get_type_def import *
+
 
 def getListOfFiles(dirName, Pattern = '*.*'):
     # create a list of file and sub directories 
@@ -34,6 +36,9 @@ def vhdl_parser(FileName):
     
     Type_Def=findDefinitionsInFile(FileContent,"type","is")
     ret["Type_Def"]=Type_Def
+
+    type_def_detail = vhdl_get_type_def_from_string(FileContent)
+    ret["Type_Def_detail"]=type_def_detail
 
     packageDef=findDefinitionsInFile(FileContent,"package","is")
     ret["packageDef"]=packageDef
