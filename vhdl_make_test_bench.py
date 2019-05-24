@@ -15,9 +15,11 @@ knownName= list()
 def isPrimitiveType(typeName):
     if typeName == "std_logic":
         return True
-    elif typeName == "std_logic_vector":
+    elif "std_logic_vector" in typeName:
         return True
-    
+    elif typeName == "integer":
+        return True
+
     return False
 
 def expand_types_records(portDef,TypeDef):
@@ -179,7 +181,8 @@ def make_package_file(entityDef,inOutFilter,suffix,path="."):
             else:
                 nullValue = x["type"]+"_null"
 
-            f.write(start + x["name"] + " => "+ nullValue)
+            line = start + x["name"] + " => "+ nullValue
+            f.write(line)
             start = ",\n  "
 
         f.write(");\n\nend "+write_pgk+";\n\npackage body " + write_pgk +" is\n\nend package body "+write_pgk + ";")
@@ -258,7 +261,7 @@ def make_write_entity(entityDef,path="."):
         for x in ports_ex:
             
             f.write(start + port_to_plain_text(x["name"]))
-            start=", "
+            start="; "
         
         f.write('",\n         NUM_COL =>   NUM_COL ) \n    port map(\n         clk => clk, \n         Rows => data_int\n    );\n\n')
         
@@ -326,7 +329,11 @@ def make_sim_csv_file(entityDef,FileName,FilterOut):
     
     with open(FileName,"w",newline="") as f:
    
-        start = ""
+        if FilterOut == "out":
+            start = ""
+        else :
+            start = "time  " + delimiter
+            
         for x in ports_ex:
             
             f.write(start + port_to_plain_text(x["name"]))
@@ -334,8 +341,15 @@ def make_sim_csv_file(entityDef,FileName,FilterOut):
             
         f.write('\n')
         
-        for i in range(100):
-            start = ""
+        for i in range(1000):
+            
+
+            if FilterOut == "out":
+                start = ""
+            else :
+                start = str(i) + delimiter
+                
+
             for x in ports_ex:
                 f.write(start + "0")
                 start = delimiter
@@ -344,7 +358,7 @@ def make_sim_csv_file(entityDef,FileName,FilterOut):
 
 
 def make_xml_test_case(entityDef,path):
-    et_name = entityDef[0]["name"]
+    et_name = get_test_bench_file_basename(entityDef)
     sim_out_filename = path+"/"+get_test_bench_file_basename(entityDef)+".testcase.xml"
     with open(sim_out_filename,"w",newline="") as f:
         f.write('<?xml version="1.0"?>\n')
@@ -370,12 +384,14 @@ def make_xml_test_case(entityDef,path):
 
 def main():
     parser = argparse.ArgumentParser(description='Creates Test benches for a given entity')
-    parser.add_argument('--OutputPath', help='Path to where the test bench should be created',default="./test/")
-    parser.add_argument('--InputFile', help='File containing the Test bench',default="klm_scint/source/Readout_Simple.vhd")
+    parser.add_argument('--OutputPath', help='Path to where the test bench should be created',default="TargetX/tests/StandardOP2")
+    parser.add_argument('--InputFile', help='File containing the Test bench',default="TargetX/Components/TXWaveFormOutputStorage.vhd")
     
 
     args = parser.parse_args()
     
+    cwd = os.getcwd()
+    print(cwd)
     entityDef = vhdl_get_entity_def(args.InputFile)
     make_package_file(entityDef,"none","write",args.OutputPath)
     make_package_file(entityDef,"out","read",args.OutputPath)

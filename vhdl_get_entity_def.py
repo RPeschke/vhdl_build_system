@@ -72,12 +72,12 @@ def split_port_entries(ports):
             if sp1[0] in "in out input":
                 entry["type"] = " ".join(sp1[1:])
                 entry["InOut"] = sp1[0]
-                entry["default"] = sp[2][1:].strip()
+                entry["default"] = sp[2][1:].strip()[1:].strip()
             else:             
             
                 entry["type"] = " ".join(sp1[0:])
                 entry["InOut"] = "in"
-                entry["default"] = sp[2][1:].strip()
+                entry["default"] = sp[2][1:].strip()[1:].strip()
             
 
 
