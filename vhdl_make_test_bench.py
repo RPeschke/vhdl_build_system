@@ -142,7 +142,7 @@ def get_writer_record_name(entityDef):
     record_name = et_name +"_writer_rec"
     return record_name
 
-def make_package_file(entityDef,inOutFilter,suffix,path="."):
+def make_package_file(entityDef,inOutFilter,suffix,PackagesUsed,path="."):
     et_name = entityDef[0]["name"]
     write_pgk_file = path+"/"+et_name +"_" + suffix +"_pgk.vhd"
     
@@ -156,6 +156,11 @@ def make_package_file(entityDef,inOutFilter,suffix,path="."):
     
     with open(write_pgk_file,'w',newline= "") as f:
         f.write("library IEEE;\nuse IEEE.STD_LOGIC_1164.all;\nuse ieee.std_logic_arith.all;\nuse ieee.std_logic_unsigned.all;\nuse work.UtilityPkg.all;\n\n")
+        f.write("\n-- Start Include user packages --\n")
+        for package in PackagesUsed:
+            f.write("use work." + package + ".all;\n")
+            
+        f.write("-- End Include user packages --\n\n")
         f.write("package "+ write_pgk +" is\n")
         f.write("type "+ write_record +" is record \n")
         ports = entityDef[0]["port"]
@@ -393,8 +398,9 @@ def main():
     cwd = os.getcwd()
     print(cwd)
     entityDef = vhdl_get_entity_def(args.InputFile)
-    make_package_file(entityDef,"none","write",args.OutputPath)
-    make_package_file(entityDef,"out","read",args.OutputPath)
+    ParsedFile = vhdl_parser(args.InputFile)
+    make_package_file(entityDef,"none","write",ParsedFile["packageUSE"], args.OutputPath)
+    make_package_file(entityDef,"out","read",ParsedFile["packageUSE"], args.OutputPath)
 
     make_read_entity(entityDef,args.OutputPath)
     make_write_entity(entityDef,args.OutputPath)
