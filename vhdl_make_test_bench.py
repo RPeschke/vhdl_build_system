@@ -385,20 +385,36 @@ def make_xml_test_case(entityDef,path):
         
 
 
+
+def entity2FileName(entityName,BuildFolder = "build/",reparse=True):
         
+    DataBaseFile=BuildFolder+"DependencyBD"
+    if reparse:
+        vhdl_parse_folder(Folder= ".",DataBaseFile=DataBaseFile)
+    
+    d = shelve.open(DataBaseFile) 
+    entity =  find_entity(d, entityName)
+    return entity
+    
+    
+    
+    
+            
 
 def main():
     parser = argparse.ArgumentParser(description='Creates Test benches for a given entity')
     parser.add_argument('--OutputPath', help='Path to where the test bench should be created',default="TargetX/tests/StandardOP2")
-    parser.add_argument('--InputFile', help='File containing the Test bench',default="TargetX/Components/TXWaveFormOutputStorage.vhd")
-    
+    parser.add_argument('--EntityName', help='Name of the entity Test bench',default="TXWaveFormOutputStorage")
+
 
     args = parser.parse_args()
     
     cwd = os.getcwd()
     print(cwd)
-    entityDef = vhdl_get_entity_def(args.InputFile)
-    ParsedFile = vhdl_parser(args.InputFile)
+    InputFile = entity2FileName(args.EntityName)
+
+    entityDef = vhdl_get_entity_def(InputFile)
+    ParsedFile = vhdl_parser(InputFile)
     make_package_file(entityDef,"none","write",ParsedFile["packageUSE"], args.OutputPath)
     make_package_file(entityDef,"out","read",ParsedFile["packageUSE"], args.OutputPath)
 
