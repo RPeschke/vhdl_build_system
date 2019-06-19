@@ -11,6 +11,34 @@ from tabulate import tabulate
 from shutil import copyfile
 import argparse
 
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import LogNorm
+
+import pandas as pd
+from pylab import *
+import matplotlib.colors
+from matplotlib.pyplot import figure
+
+def plot_dataset_pcolor(df,FileName):
+    Values = df.values
+    datasets_names   = df.columns.values
+    figure(num=None, figsize=(8, 20), dpi=80, facecolor='w', edgecolor='k')
+    d= Values.max(axis=0)
+    
+    d = np.where(d==0, 1, d) 
+    x_normed = Values / d
+    plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
+    plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
+    c = plt.pcolor(x_normed)
+    xticks(np.arange(0.5, len(datasets_names), step=1), datasets_names, rotation='vertical')
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+
+
+    plt.savefig(FileName)
+
+
 def get_ROI(df1,Headers,Lines):
     headers = Headers.text.split(",")
     headers = [x.strip(' ') for x in headers]
@@ -72,10 +100,12 @@ def make_description(xNode,buildFolder):
         df_ref = get_ROI(df1,headers,Lines)
 
         ret += "\n ### Comparison Between Output File and Reference File\n\n"
-        dfOut.insert(len(list(dfOut)),'Out <==> Ref',' <==> ')
+#        dfOut.insert(len(list(dfOut)),'Out <==> Ref',' <==> ')
         dfOut=dfOut.join(df_ref,rsuffix='_ref')
-
-        ret+= tabulate(dfOut, headers="keys", tablefmt="github") +"\n\n"
+     
+        plot_dataset_pcolor(dfOut,buildFolder + entity +"/"+ name+".png")
+        ret+= "![Drag Racing]("+entity +"/"+ name+".png"+")\n\n"
+        #ret+= tabulate(dfOut, headers="keys", tablefmt="github") +"\n\n"
     except :
         ret += "\n error while running the test\n "
 
