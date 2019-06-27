@@ -82,6 +82,7 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
         f.write("cd " +OutputPath+ "  \n")
         if build:
             build_command=""
+            build_command += "killall "+ outputExe+"\n"
             build_command += "rm -rf " +outputExe+ "\n" 
             build_command += "fuse -intstyle ise -incremental -lib secureip -o " + outputExe + " -prj " +  inputPath + "  work." + entity +" \n"
             f.write(build_command)
@@ -89,6 +90,7 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
         if run:
             handle_isimBatchFile = get_handle_isim_script(outputTCL,with_gui)
             run_and_backup = ""
+            run_and_backup += "killall "+ outputExe+"\n"
             run_and_backup += "./"+ outputExe + " -intstyle ise -tclbatch $tclbatchfile  "+use_GUI_command +"\n" 
 
             run_and_backup += "Simcount=`date +%Y%m%d%H%M%S`\n"

@@ -23,7 +23,7 @@ def get_text_between_outtermost(raw_text,startToken,EndToken):
         endIndex = raw_text.find(EndToken,current_index)
 
         if endIndex == -1:
-            raise Exception("end Token not find")
+            raise Exception("end Token not find",raw_text)
         elif startIndex > -1 and startIndex < endIndex:
             TokenLevel+=1
             current_index = startIndex +len(startToken)
