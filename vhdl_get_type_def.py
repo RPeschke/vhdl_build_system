@@ -8,8 +8,8 @@ import os,sys,inspect
 #from  vhdl_parser import *
 from vhdl_build_system.vhdl_parser import *
 
-from  vhdl_get_dependencies import *
-from  vhdl_get_entity_def import *
+from  vhdl_build_system.vhdl_get_dependencies import *
+from  vhdl_build_system.vhdl_get_entity_def import *
 
 
 def vhdl_get_type_def_array(rawText):
