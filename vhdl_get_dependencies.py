@@ -21,13 +21,7 @@ def try_make_dir(name,isRelativePath=True):
         print ("Successfully created the directory %s " % name)
 
 
-def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
-    if not OutputFile:
-        OutputFile =  "build/" +Entity+"/"+Entity+".prj"
-        outPath = "build/" +Entity
-    
-    try_make_dir(outPath)
-    
+def vhdl_get_dependencies_internal(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
     d = shelve.open(DataBaseFile)
     TB_entity = Entity
     eneties_used ={}
@@ -43,8 +37,6 @@ def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyB
         eneties_used = make_depency_list(d,eneties_used ,find_used_components,find_component)
         new_length = len(eneties_used)
 
-    lines =""
-
     fileList=list()
     for k in eneties_used:
         FileName =eneties_used[k].replace("\\","/") 
@@ -53,13 +45,25 @@ def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyB
         else:
             print("doublication "+ FileName)
             
-
-
+    return fileList        
     
+def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
+    
+    
+    fileList = vhdl_get_dependencies_internal(Entity, OutputFile, DataBaseFile)
+    
+    if not OutputFile:
+        OutputFile =  "build/" +Entity+"/"+Entity+".prj"
+        outPath = "build/" +Entity
+    
+    try_make_dir(outPath)
+     
     with open(OutputFile,'w') as f:
         for k in fileList:
             lines = 'vhdl work "../../' + k + '"\n'
             f.write(lines)
+    
+    return fileList
 
 
 

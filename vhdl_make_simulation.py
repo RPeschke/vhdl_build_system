@@ -166,7 +166,9 @@ def vhdl_make_simulation(Entity,BuildFolder = "build/",reparse=True):
     DataBaseFile=BuildFolder+"DependencyBD"
     if reparse:
         vhdl_parse_folder(Folder= ".",DataBaseFile=DataBaseFile)
-    vhdl_get_dependencies(Entity,DataBaseFile=DataBaseFile)
+    
+    
+    fileList = vhdl_get_dependencies(Entity,DataBaseFile=DataBaseFile)
 
     vhdl_make_simulation_intern(Entity,BuildFolder)
 
