@@ -3,10 +3,11 @@ import os,sys,inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
-import os,sys,inspect
+
 from  vhdl_build_system.vhdl_parser import *
 from  vhdl_build_system.vhdl_get_dependencies import *
 
+from  vhdl_parser import *
 
 def get_text_between_outtermost(raw_text,startToken,EndToken):
     ret = ""

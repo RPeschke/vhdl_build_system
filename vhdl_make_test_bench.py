@@ -1,14 +1,14 @@
+import argparse
 import os,sys,inspect
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
-from  vhdl_build_system.vhdl_parser import *
-from  vhdl_build_system.vhdl_get_dependencies import *
-from  vhdl_build_system.vhdl_get_entity_def import *
-import argparse
-
-from vhdl_build_system.vhdl_get_type_def_from_db import *
+from  vhdl_build_system.vhdl_parser                import *
+from  vhdl_build_system.vhdl_get_dependencies      import *
+from  vhdl_build_system.vhdl_get_entity_def        import *
+from  vhdl_build_system.vhdl_get_type_def_from_db  import *
+from  vhdl_build_system.vhdl_make_stand_alone_impl import *
 
 knownName= list()
 
@@ -428,6 +428,7 @@ def main():
     make_sim_csv_file(entityDef,sim_out_filename,"none",NrOfEntires=NumberOfRows)
     
     make_xml_test_case(entityDef,args.OutputPath)
+    make_stand_alone_impl( entityDef = entityDef , path = args.OutputPath, suffix= "")
 
 
 if __name__== "__main__":
