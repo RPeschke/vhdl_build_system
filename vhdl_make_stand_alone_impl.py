@@ -14,6 +14,7 @@ from  vhdl_build_system.vhdl_parser            import *
 
 def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.8.97', Port=2001, path="."):
   et_name = entityDef[0]["name"]
+  et_name_top = et_name+"_top"
   stand_alone_file = path+"/"+et_name +"_" + suffix +"_top.vhd"
 
   ip = binascii.hexlify(socket.inet_aton(ipAddr)).upper()
@@ -62,6 +63,9 @@ library IEEE;
   use IEEE.std_logic_1164.all;
   use IEEE.numeric_std.all;
 
+library UNISIM;
+  use UNISIM.VComponents.all;
+
   use work.UtilityPkg.all;
   use work.Eth1000BaseXPkg.all;
   use work.GigabitEthPkg.all;
@@ -86,18 +90,18 @@ entity ScrodEthernetExample_ethernet_2_axi is
   );
 end entity;
 
-architecture rtl of ScrodEthernetExample_ethernet_2_axi is
+architecture rtl of {EntityName} is
   
-  signal ethClk125       : sl;
+  signal clk       : sl := '0';
   -- User Data interfaces
-  signal  TxDataChannels :  DWORD;
-  signal  TxDataValids   :  sl;
-  signal  TxDataLasts    :  sl;
-  signal  TxDataReadys   :  sl;
-  signal  RxDataChannels :  DWORD;
-  signal  RxDataValids   :  sl;
-  signal  RxDataLasts    :  sl;
-  signal  RxDataReadys   :  sl;
+  signal  TxDataChannels :  DWORD := (others => '0');
+  signal  TxDataValids   :  sl := '0';
+  signal  TxDataLasts    :  sl := '0';
+  signal  TxDataReadys   :  sl := '0';
+  signal  RxDataChannels :  DWORD := (others => '0');
+  signal  RxDataValids   :  sl := '0';
+  signal  RxDataLasts    :  sl := '0';
+  signal  RxDataReadys   :  sl := '0';
   
    constant COLNum : integer := {inputChannels};
    signal i_data :  Word32Array(COLNum -1 downto 0) := (others => (others => '0'));
@@ -111,8 +115,11 @@ architecture rtl of ScrodEthernetExample_ethernet_2_axi is
    signal data_out : {writer_record} := {writer_record}_null;
 begin
   
-  
+  U_IBUFGDS : IBUFGDS port map ( I => fabClkP, IB => fabClkN, O => clk);
+
   e2a : entity work.ethernet2axistream port map(
+    clk => clk,
+    
     -- Direct GT connections
     gtTxP        => gtTxP,
     gtTxN        => gtTxN,
@@ -121,11 +128,8 @@ begin
     gtClkP       => gtClkP, 
     gtClkN       => gtClkN,
     
-    -- Alternative clock input
-    fabClkP      => fabClkP,
-    fabClkN      => fabClkN,
     
-    clockOut => ethClk125,
+
     -- SFP transceiver disable pin
     txDisable    => txDisable,
     -- axi stream output
@@ -150,7 +154,7 @@ begin
     generic map (
       COLNum => COLNum 
     ) port map (
-      Clk       => ethClk125,
+      Clk       => clk,
       -- Incoming data
       rxData      => RxDataChannels,
       rxDataValid => RxDataValids,
@@ -164,7 +168,7 @@ begin
     generic map (
       COLNum => COLNum_out 
     ) port map (
-      Clk      => ethClk125,
+      Clk      => clk,
       -- Incoming data
       tXData      =>  TxDataChannels,
       txDataValid =>  TxDataValids,
@@ -198,6 +202,7 @@ begin
 
 end architecture;
 """.format(
+    EntityName=et_name_top,
     inputChannels=11,
     outputChannel=13,
     ip3 = ip[0:2].decode("utf-8"),

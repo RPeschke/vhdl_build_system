@@ -109,7 +109,7 @@ def main():
         Entity = sys.argv[1]
         UCF_FILE = sys.argv[2]
     else:
-        Entity= "klm_scint"
+        Entity= "ScrodEthernetExample_ethernet_2_axi"
         UCF_FILE = "./klm_scrod/constraint/klm_scrod.ucf"
 
     print('Entity: ', Entity)
