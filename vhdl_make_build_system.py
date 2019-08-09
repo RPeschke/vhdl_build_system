@@ -102,6 +102,8 @@ with open("run_test_cases.sh","w",newline="") as f:
     f.write('  python3 ' + vhdl_build_system +'/vhdl_run_test_case.py \n')
     f.write('fi \n')
 
+os.system("chmod +x ./run_test_cases.sh") 
+
 with open("update_test_cases.sh","w",newline="") as f:
     f.write('#/bin/bash\n')
     f.write('echo "Runing test case  \'$1\'"\n\n')
@@ -112,4 +114,12 @@ with open("update_test_cases.sh","w",newline="") as f:
     f.write('  python3 ' + vhdl_build_system +'/vhdl_run_test_case.py --update True \n')
     f.write('fi \n')
 
-os.system("chmod +x ./run_test_cases.sh") 
+os.system("chmod +x ./update_test_cases.sh") 
+
+
+with open("make_test_bench","w",newline="") as f:
+    f.write('#/bin/bash\n')
+    f.write('echo "make test bench for \'$1\' in Folder \'$2\' " \n\n')
+    f.write('python3 vhdl_build_system//vhdl_make_test_bench.py  --EntityName $1 --OutputPath $2\n')
+
+os.system("chmod +x ./make_test_bench.sh") 
