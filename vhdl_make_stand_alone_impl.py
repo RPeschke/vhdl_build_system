@@ -25,7 +25,7 @@ def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.8.97', Port=2001,
 
   ports = entityDef[0]["port"]
   ports = remove_clock_from_ports(ports)    
-  dut = "DUT :  entity work." + et_name + " port map(\n  clk => clk"
+  dut = "DUT :  entity work." + et_name + " port map(\n  clk => fabClk"
   for x in ports:
     dut += ",\n  " + x["name"] +" => data_out." + x["name"] 
   dut += "\n);"
@@ -72,7 +72,9 @@ library UNISIM;
 
   use work.{write_pgk}.all;
   use work.{reader_pgk}.all;
-
+  use work.type_conversions_pgk.all;
+  
+  
 entity {EntityName} is
   port (
     -- Direct GT connections
