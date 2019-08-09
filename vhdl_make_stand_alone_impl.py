@@ -73,7 +73,7 @@ library UNISIM;
   use work.{write_pgk}.all;
   use work.{reader_pgk}.all;
 
-entity ScrodEthernetExample_ethernet_2_axi is
+entity {EntityName} is
   port (
     -- Direct GT connections
     gtTxP        : out sl;
@@ -92,7 +92,7 @@ end entity;
 
 architecture rtl of {EntityName} is
   
-  signal clk       : sl := '0';
+  signal fabClk       : sl := '0';
   -- User Data interfaces
   signal  TxDataChannels :  DWORD := (others => '0');
   signal  TxDataValids   :  sl := '0';
@@ -115,10 +115,10 @@ architecture rtl of {EntityName} is
    signal data_out : {writer_record} := {writer_record}_null;
 begin
   
-  U_IBUFGDS : IBUFGDS port map ( I => fabClkP, IB => fabClkN, O => clk);
+  U_IBUFGDS : IBUFGDS port map ( I => fabClkP, IB => fabClkN, O => fabClk);
 
   e2a : entity work.ethernet2axistream port map(
-    clk => clk,
+    clk => fabClk,
     
     -- Direct GT connections
     gtTxP        => gtTxP,
@@ -154,7 +154,7 @@ begin
     generic map (
       COLNum => COLNum 
     ) port map (
-      Clk       => clk,
+      Clk       => fabClk,
       -- Incoming data
       rxData      => RxDataChannels,
       rxDataValid => RxDataValids,
@@ -168,7 +168,7 @@ begin
     generic map (
       COLNum => COLNum_out 
     ) port map (
-      Clk      => clk,
+      Clk      => fabClk,
       -- Incoming data
       tXData      =>  TxDataChannels,
       txDataValid =>  TxDataValids,

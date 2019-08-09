@@ -7,7 +7,11 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
 from vhdl_build_system.vhdl_get_type_def import *
-from vhdl_get_type_def import *
+
+from vhdl_build_system.vhdl_load_file_without_comments import * 
+from  vhdl_build_system.vhdl_get_type_def import * 
+
+from  vhdl_get_type_def import * 
 
 
 def getListOfFiles(dirName, Pattern = '*.*'):
@@ -29,6 +33,26 @@ def getListOfFiles(dirName, Pattern = '*.*'):
             allFiles.append(fullPath)
                 
     return allFiles
+
+def vhdl_parse_xco(FileName):
+    ret = {}
+    ret["FileName"] = FileName
+    
+    baseName = FileName.split("/")[-1].split(".xco")[0]
+    print(baseName)
+    entities_def=[]
+    entities_def.append(baseName)
+    ret["entityDef"]= entities_def
+    ret["Type_Def"] = []
+    ret["Type_Def_detail"]=[]
+    ret["packageDef"]=[]
+    ret["packageUSE"]=[]
+    ret["entityUSE"]=[]
+    ret["ComponentUSE"]=[]
+    ret["Modified"] = []
+
+
+    return ret
 
 
 def vhdl_parser(FileName):
@@ -89,21 +113,6 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
     return ret
 
 
-def load_file_witout_comments(FileName):
-    FileContent = ""
-    with open(FileName, "r") as f:
-        contents =f.readlines()
-        for x in contents:
-            FileContent+= x.split("--")[0].split("\r\n")[0].split("\n")[0] + " "
-    
-    FileContent = FileContent.replace("\t", "  ")
-    FileContent = FileContent.replace("(", " ( ")
-    FileContent = FileContent.replace(")", " ) ")
-    FileContent = FileContent.replace(";", " ; ")
-    FileContent = FileContent.replace(":", " : ")
-    FileContent =FileContent.lower()
-    return FileContent
-
 
 
 def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
@@ -125,6 +134,13 @@ def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
             ret= vhdl_parser(f)
             d[f] = ret
     
+    flist = getListOfFiles(Folder,"*.xco*")
+    for f in flist:
+        if "build/" not in f:
+            ret = vhdl_parse_xco(f)
+            print(f)
+            d[f] = ret
+
     d.close()   
 
 

@@ -2,6 +2,8 @@ import os
 import shelve
 import fnmatch, re
 
+from vhdl_build_system.vhdl_parser import *
+from vhdl_parser import *
 
 def remove_doublication_from_list(inList):
     ret  = list(dict.fromkeys(inList))
@@ -140,9 +142,9 @@ def make_depency_list(d, eneties_used, find_used_func,find_def_func):
             entites_in_file = find_used_func(d,new_EntitesUsed[k])
             
             for e in entites_in_file:
-        
                 FileName = find_def_func(d,e)
-                if FileName:
+                
+                if FileName and ".xco" not in FileName:
                     new_EntitesUsed[e] = FileName
 
 

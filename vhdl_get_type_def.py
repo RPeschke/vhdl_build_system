@@ -12,6 +12,8 @@ from  vhdl_build_system.vhdl_get_dependencies import *
 from  vhdl_build_system.vhdl_get_entity_def import *
 
 
+
+
 def vhdl_get_type_def_array(rawText):
     words = rawText.strip().split(" ")
     words = list(filter(None, words)) 
