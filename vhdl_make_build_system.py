@@ -63,19 +63,30 @@ with open("make_simulation.sh","w",newline="") as f:
 os.system("chmod +x ./make_simulation.sh") 
 
 with open("make_implementation.sh","w",newline="") as f:
-    f.write('#/bin/bash\n')
-    f.write('echo "make ISE build system for $1"\n\n')
-    f.write("mkdir ./" +args.path +"/$1/ \n\n")
-    f.write('cp "'+protoBuild_+'/proto_Project.in"   "./' + args.path +'/$1/"\n\n')
-    f.write('mv "./' + args.path +'/$1/proto_Project.in"  "./' + args.path +'/$1/$1_proto_Project.in"\n\n')
+    cp = '''#/bin/bash
+#$1 ... Entity name
+#$2 ... UCF File
+#$3 ... coregen folder (optional)
 
-    f.write("python3 "+vhdl_build_system+"/vhdl_make_implementation.py $1 $2\n\n")
- 
-
- 
-    f.write('cp "'+protoBuild_+'/simpleTemplate.xise.in"   "./' + args.path +'/$1/"\n\n')
-    f.write('mv "./' + args.path +'/$1/simpleTemplate.xise.in"  "./' + args.path +'/$1/$1_simpleTemplate.xise.in"\n\n')
-    f.write('python3 '+ makeise_ +'/makeise.py "' + args.path +'/$1/$1.in" "' + args.path +'/$1/$1.xise"\n')
+echo "make ISE build system for $1"
+mkdir ./{protoBuild}/$1/
+cp "{protoBuild}/proto_Project.in"   "./{buildpath}/$1/"
+mv "./{buildpath}/$1/proto_Project.in"  "./{buildpath}/$1/$1_proto_Project.in"
+python3 {vhdl_build_system}/vhdl_make_implementation.py $1 $2
+cp "{protoBuild}/simpleTemplate.xise.in"   "./{buildpath}/$1/"
+mv "./{buildpath}/$1/simpleTemplate.xise.in"  "./{buildpath}/$1/$1_simpleTemplate.xise.in"
+python3  {makeisePath}/makeise.py "{buildpath}/$1/$1.in" "{buildpath}/$1/$1.xise"
+if [ "$3" != "" ]; then
+  cp -rf $3 ./{buildpath}/$1/coregen/
+fi
+    '''.format(
+        makeisePath=makeise_,
+        buildpath=args.path,
+        protoBuild=protoBuild_,
+        vhdl_build_system=vhdl_build_system
+        )
+    f.write(cp)
+    
 
 os.system("chmod +x ./make_implementation.sh") 
 

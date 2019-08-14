@@ -101,8 +101,46 @@ def vhdl_make_implementation(Entity, UCF_file):
 
 
 
+def make_build_script(Entity, UCF_file):
 
 
+    script='''#/bin/bash
+#syntesize
+xst -intstyle ise -filter "./iseconfig/filter.filter" -ifn "{entityName}.xst" -ofn "{entityName}.syr"
+
+#Translate:
+ngdbuild -filter "iseconfig/filter.filter" -intstyle ise -dd _ngo -sd coregen -nt timestamp -uc {ucf_file} -p xc6slx150t-fgg676-3 {entityName}.ngc {entityName}.ngd
+
+#MAP:
+map -filter "iseconfig/filter.filter" -intstyle ise -p xc6slx150t-fgg676-3 -w -logic_opt off -ol high -t 1 -xt 0 -register_duplication off -r 4 -global_opt off -mt off -ir off -pr off -lc off -power off -o {entityName}_map.ncd {entityName}.ngd {entityName}.pcf
+
+#place and Route:
+par -filter "iseconfig/filter.filter" -w -intstyle ise -ol high -mt off {entityName}_map.ncd {entityName}.ncd {entityName}.pcf
+
+#tracer:
+trce -filter iseconfig/filter.filter -intstyle ise -v 3 -s 3 -n 3 -fastpaths -xml {entityName}.twx {entityName}.ncd -o {entityName}.twr {entityName}.pcf
+
+
+#Generate Bitfile:
+bitgen -filter "iseconfig/filter.filter" -intstyle ise -f {entityName}.ut {entityName}.ncd
+'''.format(
+entityName=Entity,
+ucf_file="../../" + UCF_file
+)
+    Entity_build_path =  "build/"
+    with open(Entity_build_path+Entity+"/build_implementation.sh",'w',newline="") as f:
+        f.write(script)
+    
+    synt = '''#/bin/bash
+#syntesize
+xst -intstyle ise -filter "./iseconfig/filter.filter" -ifn "{entityName}.xst" -ofn "{entityName}.syr"
+'''.format(
+entityName=Entity,
+ucf_file="../../" + UCF_file
+)
+    Entity_build_path =  "build/"
+    with open(Entity_build_path+Entity+"/build_syntesize.sh",'w',newline="") as f:
+        f.write(script)
 
 def main():
     if len(sys.argv) > 2:
@@ -114,6 +152,7 @@ def main():
 
     print('Entity: ', Entity)
     vhdl_make_implementation(Entity, UCF_FILE)
+    make_build_script(Entity, UCF_FILE)
 
 if __name__== "__main__":
     main()
