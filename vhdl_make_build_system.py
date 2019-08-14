@@ -128,9 +128,44 @@ with open("update_test_cases.sh","w",newline="") as f:
 os.system("chmod +x ./update_test_cases.sh") 
 
 
-with open("make_test_bench","w",newline="") as f:
+with open("make_test_bench.sh","w",newline="") as f:
     f.write('#/bin/bash\n')
     f.write('echo "make test bench for \'$1\' in Folder \'$2\' " \n\n')
     f.write('python3 vhdl_build_system//vhdl_make_test_bench.py  --EntityName $1 --OutputPath $2\n')
 
 os.system("chmod +x ./make_test_bench.sh") 
+
+with open("build_implementation.sh","w",newline="") as f:
+    line = ""
+    if args.ssh == sshNotSet:
+        line = 'cd ./'+ args.path + '/$1/ && ./build_implementation.sh \ncd -\n'
+    else :
+        line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +'/' + args.path +'/$1/ && ./build_implementation.sh "'
+
+    fileContent = '''#/bin/bash
+echo "build_implementation $1"
+# $1 : Test Bench Name
+{line}
+    '''.format(
+    line=line
+        )
+    f.write(fileContent)
+os.system("chmod +x ./build_implementation.sh") 
+
+with open("build_synt.sh","w",newline="") as f:
+    line = ""
+    if args.ssh == sshNotSet:
+        line = 'cd ./'+ args.path + '/$1/ && ./build_syntesize.sh \ncd -\n'
+    else :
+        line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +'/' + args.path +'/$1/ && ./build_syntesize.sh "'
+
+    fileContent = '''#/bin/bash
+echo "build_syntesize $1"
+# $1 : Test Bench Name
+{line}
+    '''.format(
+    line=line
+        )
+    f.write(fileContent)
+
+os.system("chmod +x ./build_synt.sh") 
