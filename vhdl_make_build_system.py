@@ -4,6 +4,13 @@ import os
 import xml.dom.minidom as minidom
 from os.path import relpath
 
+def make_bash_file(FileName,Content):
+    with open(FileName,"w",newline="") as f:
+        f.write(Content)
+    
+    os.system("chmod +x ./"+FileName) 
+
+
 def prettify(elem):
     """Return a pretty-printed XML string for the Element.
     """
@@ -17,7 +24,8 @@ parser.add_argument('--path', help='Path to where the build system should be loc
 parser.add_argument('--ssh', help='ssh configuration used for running the Xilinx programs remotly',default=sshNotSet)
 parser.add_argument('--remotePath', help='Path on the remote machine that has the Xilinx programs', default="path_to_project")
 parser.add_argument('--protoBuild', help='Path to the proto build files', default="protoBuild/")
-
+parser.add_argument('--RunPcSsh', help='ssh configuration used for running the firmware on actual Hardware', default="labpc")
+parser.add_argument('--RunPcRemote', help='Path on the remote running PC', default="/home/belle2/Documents/tmp/")
 
 args = parser.parse_args()
 
@@ -48,22 +56,30 @@ protoBuild_ =args.protoBuild
 protoBuild.text = protoBuild_
 #print(prettify(setup))
 
-#ET.write(args.path+"/vhdl_build_setup.xml",setup)
+########################################################################
+#   vhdl_build_setup
 with open(args.path+"/vhdl_build_setup.xml","w",newline="") as f:
     f.write(prettify(setup))
 
 
+########################################################################
+#   make_simulation
 
-with open("make_simulation.sh","w",newline="") as f:
-    f.write('#/bin/bash\n')
-    f.write('echo "make ISIM build system for \'$1\'"\n\n')
-    f.write('# $1 : Test Bench Name\n\n')
-    f.write('python3 '+vhdl_build_system+'/vhdl_make_simulation.py  "$1"\n')
+make_simulation='''#/bin/bash
+echo "make ISIM build system for \'$1\'"
 
-os.system("chmod +x ./make_simulation.sh") 
 
-with open("make_implementation.sh","w",newline="") as f:
-    cp = '''#/bin/bash
+# $1 : Test Bench Name
+python3 {vhdl_build_system}/vhdl_make_simulation.py  "$1"
+'''.format(
+    vhdl_build_system=vhdl_build_system
+    )
+make_bash_file("make_simulation.sh",make_simulation)
+
+
+########################################################################
+#   make_implementation
+make_implementation = '''#/bin/bash
 #$1 ... Entity name
 #$2 ... UCF File
 #$3 ... coregen folder (optional)
@@ -85,87 +101,143 @@ fi
         protoBuild=protoBuild_,
         vhdl_build_system=vhdl_build_system
         )
-    f.write(cp)
-    
+make_bash_file("make_implementation.sh",make_implementation)
 
-os.system("chmod +x ./make_implementation.sh") 
+########################################################################
+#   run_simulation
 
+line = ""
+if args.ssh == sshNotSet:
+    line = './'+ args.path + '/$1/run.sh $2 $3\n'
+else :
+    line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +' && ./'+ args.path + '/$1/run.sh $2 $3"\n'
 
-with open("run_simulation.sh","w",newline="") as f:
-    f.write('#/bin/bash\n')
-    f.write('echo "running $1"\n\n')
-    f.write('# $1 : Test Bench Name\n# $2 : Input csv File name\n# $3 : output csv File Name\n')
-    if args.ssh == sshNotSet:
-        f.write('./'+ args.path + '/$1/run.sh $2 $3\n')
-    else :
-        f.write('ssh ' + args.ssh +' "cd ' + args.remotePath +' && ./'+ args.path + '/$1/run.sh $2 $3"\n')
+run_simulation='''#/bin/bash
+echo "running $1"
 
-os.system("chmod +x ./run_simulation.sh") 
+# $1 : Test Bench Name
+# $2 : Input csv File name
+# $3 : output csv File Name
+{line}
+'''.format(
+    line=line
+)
 
+make_bash_file("run_simulation.sh",run_simulation)
         
-with open("run_test_cases.sh","w",newline="") as f:
-    f.write('#/bin/bash\n')
-    f.write('echo "Runing test case  \'$1\'"\n\n')
-    f.write('# $1 : Test Case File\n')
-    f.write('if [ "$1" != "" ]; then \n')
-    f.write("  python3 "+ vhdl_build_system + "/vhdl_run_test_case.py --test $1 \n")
-    f.write('else \n')
-    f.write('  python3 ' + vhdl_build_system +'/vhdl_run_test_case.py \n')
-    f.write('fi \n')
-
-os.system("chmod +x ./run_test_cases.sh") 
-
-with open("update_test_cases.sh","w",newline="") as f:
-    f.write('#/bin/bash\n')
-    f.write('echo "Runing test case  \'$1\'"\n\n')
-    f.write('# $1 : Test Case File\n')
-    f.write('if [ "$1" != "" ]; then \n')
-    f.write("  python3 "+ vhdl_build_system + "/vhdl_run_test_case.py --test $1 --update True \n")
-    f.write('else \n')
-    f.write('  python3 ' + vhdl_build_system +'/vhdl_run_test_case.py --update True \n')
-    f.write('fi \n')
-
-os.system("chmod +x ./update_test_cases.sh") 
+########################################################################
+#   run_test_cases
+run_test_cases= '''#/bin/bash
+echo "Runing test case  \'$1\'"
 
 
-with open("make_test_bench.sh","w",newline="") as f:
-    f.write('#/bin/bash\n')
-    f.write('echo "make test bench for \'$1\' in Folder \'$2\' " \n\n')
-    f.write('python3 vhdl_build_system//vhdl_make_test_bench.py  --EntityName $1 --OutputPath $2\n')
+# $1 : Test Case File
+if [ "$1" != "" ]; then 
+  python3 {vhdl_build_system}/vhdl_run_test_case.py --test $1 
+else 
+  python3 {vhdl_build_system}/vhdl_run_test_case.py
+fi 
+'''.format(
+    vhdl_build_system=vhdl_build_system
+    )
+make_bash_file("run_test_cases.sh",run_test_cases)
 
-os.system("chmod +x ./make_test_bench.sh") 
 
-with open("build_implementation.sh","w",newline="") as f:
-    line = ""
-    if args.ssh == sshNotSet:
-        line = 'cd ./'+ args.path + '/$1/ && ./build_implementation.sh \ncd -\n'
-    else :
-        line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +'/' + args.path +'/$1/ && ./build_implementation.sh "'
+#########################################################################
+#   update_test_cases
+update_test_cases='''#/bin/bash
+echo "Runing test case  \'$1\'"
+# $1 : Test Case File
+if [ "$1" != "" ]; then
+  python3 {vhdl_build_system}/vhdl_run_test_case.py --test $1 --update True 
+else
+  python3 {vhdl_build_system}/vhdl_run_test_case.py --update True 
+fi
+'''.format(
+    vhdl_build_system=vhdl_build_system
+        )
+make_bash_file("update_test_cases.sh",update_test_cases)
 
-    fileContent = '''#/bin/bash
+
+#########################################################################
+#   make_test_bench
+make_test_bench = '''#/bin/bash
+echo "make test bench for \'$1\' in Folder \'$2\' "
+
+
+python3 {vhdl_build_system}/vhdl_make_test_bench.py  --EntityName $1 --OutputPath $2
+'''.format(
+    vhdl_build_system=vhdl_build_system
+        )
+make_bash_file("make_test_bench.sh",make_test_bench)
+
+#########################################################################
+#   build_implementation
+
+line = ""
+if args.ssh == sshNotSet:
+    line = 'cd ./'+ args.path + '/$1/ && ./build_implementation.sh \ncd -\n'
+else :
+    line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +'/' + args.path +'/$1/ && ./build_implementation.sh "'
+
+build_implementation = '''#/bin/bash
 echo "build_implementation $1"
 # $1 : Test Bench Name
 {line}
     '''.format(
     line=line
         )
-    f.write(fileContent)
-os.system("chmod +x ./build_implementation.sh") 
+make_bash_file("build_implementation.sh",build_implementation)
 
-with open("build_synt.sh","w",newline="") as f:
-    line = ""
-    if args.ssh == sshNotSet:
-        line = 'cd ./'+ args.path + '/$1/ && ./build_syntesize.sh \ncd -\n'
-    else :
-        line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +'/' + args.path +'/$1/ && ./build_syntesize.sh "'
+#########################################################################
+#   build_synt
+line = ""
+if args.ssh == sshNotSet:
+    line = 'cd ./'+ args.path + '/$1/ && ./build_syntesize.sh \ncd -\n'
+else :
+    line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +'/' + args.path +'/$1/ && ./build_syntesize.sh "'
 
-    fileContent = '''#/bin/bash
+build_synt = '''#/bin/bash
 echo "build_syntesize $1"
 # $1 : Test Bench Name
 {line}
     '''.format(
     line=line
         )
-    f.write(fileContent)
 
-os.system("chmod +x ./build_synt.sh") 
+make_bash_file("build_synt.sh",build_synt)
+
+
+
+#########################################################################
+#   run_on_hardware
+run_on_hardware = '''#/bin/bash
+#$1 entity Name
+
+if [ "$3" != "" ]; then
+    rm -f  $3
+fi
+
+if [ "$2" != "" ]; then
+    cp -f  $2 {buildpath}/$1/$1.csv
+fi
+
+scp firmware-ethernet/scripts/udp_run.py {RunPcSsh}:{RunPcRemote}/
+
+scp {buildpath}/$1/$1.csv {RunPcSsh}:{RunPcRemote}/
+
+ssh {RunPcSsh} "cd {RunPcRemote}/ && ./udp_run.py $1.csv $1_out.csv"
+
+scp  {RunPcSsh}:{RunPcRemote}/$1_out.csv  {buildpath}/$1/
+
+if [ "$3" != "" ]; then
+    cp -f {buildpath}/$1/$1_out.csv $3
+fi
+    '''.format(
+        buildpath=args.path,
+        RunPcRemote=args.RunPcRemote,
+        RunPcSsh=args.RunPcSsh
+    
+        )
+
+make_bash_file("run_on_hardware.sh",run_on_hardware)
