@@ -12,7 +12,7 @@ from  vhdl_build_system.vhdl_parser            import *
 
 
 
-def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.8.97', Port=2001, path="."):
+def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001, path="."):
   et_name = entityDef[0]["name"]
   et_name_top = et_name+"_top"
   stand_alone_file = path+"/"+et_name +"_" + suffix +"_top.vhd"
@@ -147,7 +147,7 @@ begin
     RxDataReadys   => RxDataReadys,
 
     EthernetIpAddr  => (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"{ip0}"),
-    udpPort        =>   x"{Port}" 
+    udpPort        =>    x"07d1"  --  x"{Port}" 
     
   );
   
