@@ -17,10 +17,3 @@ def get_type_from_name(name):
                     return t1
                 
 
-def main():
-    ret = get_type_from_name("fifo_nativ_write_32_m2s")
-    print(ret)
-
-
-if __name__== "__main__":
-    main()

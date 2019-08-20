@@ -29,26 +29,3 @@ def vhdl_entity_to_csv(FileName,outputName):
         for x in entity_list[0]["port"]:
             f.write(x["type"]+", ")
 
-def main():
-    if len(sys.argv) > 1:
-        FileName = sys.argv[1]
-    else:
-        FileName = "klm_scrod/source/run_ctrl.vhd"
-
-
-    x=os.path.dirname(os.path.abspath(FileName))
-    print(x)
-    x=x.replace("\\","/")
-    y=os.path.dirname(os.path.abspath(x))
-    print(y)
-    try_make_dir(y+"/tests",False)
-    base=os.path.basename(FileName)
-    baseName= os.path.splitext(base)[0]
-    try_make_dir(y+"/tests/tb_"+baseName,False)
-    
-    vhdl_entity_to_csv(FileName,y+"/tests/tb_"+baseName +"/tb_"+baseName)
-
-
-if __name__== "__main__":
-    
-    main()

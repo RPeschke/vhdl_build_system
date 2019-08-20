@@ -132,27 +132,7 @@ def vhdl_get_entity_def(FileName):
     return entity_list
 
 
-def main():
-    if len(sys.argv) > 1:
-        FileName = sys.argv[1]
-    else:
-        FileName = "klm_scint/source/KLMScrodRegCtrl.vhd"
 
-    print('FileName: ' , FileName)
-
-    entity_list = vhdl_get_entity_def(FileName)
-    DataBaseFile = "build/" + FileName.replace("\\","/").replace("/","_").replace(" ","_")  
-    d = shelve.open(DataBaseFile) 
-    
-    d["entity"] = entity_list
-       
-    
-    d.close()   
-
-
-if __name__== "__main__":
-    
-    main()
 
 
 

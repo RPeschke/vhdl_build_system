@@ -97,25 +97,6 @@ def vhdl_get_type_def(FileName):
 
 
 
-def main():
-    if len(sys.argv) > 1:
-        FileName = sys.argv[1]
-    else:
-        FileName = "klm_scint/source/klm_scint_pkg.vhd"
-
-    print('FileName: ' , FileName)
-    
-    DataBaseFile = "build/" + FileName.replace("\\","/").replace("/","_").replace(" ","_")  
-    d = shelve.open(DataBaseFile) 
-    types = vhdl_get_type_def(FileName)
-    d["types"] = types
-       
-    
-    d.close()   
-
-
-if __name__== "__main__":
-    main()
 
 
 

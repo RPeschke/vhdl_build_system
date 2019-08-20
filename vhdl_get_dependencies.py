@@ -3,7 +3,7 @@ import shelve
 import fnmatch, re
 
 from vhdl_build_system.vhdl_parser import *
-from vhdl_parser import *
+
 
 def remove_doublication_from_list(inList):
     ret  = list(dict.fromkeys(inList))

@@ -176,14 +176,3 @@ def vhdl_make_simulation(Entity,BuildFolder = "build/",reparse=True):
     vhdl_make_simulation_intern(Entity,BuildFolder)
 
 
-def main():
-    if len(sys.argv) > 1:
-        Entity = sys.argv[1]
-    else:
-        Entity= "tb_fifo"
-
-    print('Entity: ' , Entity)
-    vhdl_make_simulation(Entity)
-
-if __name__== "__main__":
-    main()
