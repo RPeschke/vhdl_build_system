@@ -70,7 +70,7 @@ echo "make ISIM build system for \'$1\'"
 
 
 # $1 : Test Bench Name
-python3 {vhdl_build_system}/vhdl_make_simulation.py  "$1"
+python3 {vhdl_build_system}/bin_make_simulation.py  "$1"
 '''.format(
     vhdl_build_system=vhdl_build_system
     )
@@ -88,7 +88,7 @@ echo "make ISE build system for $1"
 mkdir ./{protoBuild}/$1/
 cp "{protoBuild}/proto_Project.in"   "./{buildpath}/$1/"
 mv "./{buildpath}/$1/proto_Project.in"  "./{buildpath}/$1/$1_proto_Project.in"
-python3 {vhdl_build_system}/vhdl_make_implementation.py $1 $2
+python3 {vhdl_build_system}/bin_make_implementation.py $1 $2
 cp "{protoBuild}/simpleTemplate.xise.in"   "./{buildpath}/$1/"
 mv "./{buildpath}/$1/simpleTemplate.xise.in"  "./{buildpath}/$1/$1_simpleTemplate.xise.in"
 python3  {makeisePath}/makeise.py "{buildpath}/$1/$1.in" "{buildpath}/$1/$1.xise"
@@ -133,9 +133,9 @@ echo "Runing test case  \'$1\'"
 
 # $1 : Test Case File
 if [ "$1" != "" ]; then 
-  python3 {vhdl_build_system}/vhdl_run_test_case.py --test $1 
+  python3 {vhdl_build_system}/bin_run_test_case.py --test $1 
 else 
-  python3 {vhdl_build_system}/vhdl_run_test_case.py
+  python3 {vhdl_build_system}/bin_run_test_case.py
 fi 
 '''.format(
     vhdl_build_system=vhdl_build_system
@@ -149,9 +149,9 @@ update_test_cases='''#/bin/bash
 echo "Runing test case  \'$1\'"
 # $1 : Test Case File
 if [ "$1" != "" ]; then
-  python3 {vhdl_build_system}/vhdl_run_test_case.py --test $1 --update True 
+  python3 {vhdl_build_system}/bin_run_test_case.py --test $1 --update True 
 else
-  python3 {vhdl_build_system}/vhdl_run_test_case.py --update True 
+  python3 {vhdl_build_system}/bin_run_test_case.py --update True 
 fi
 '''.format(
     vhdl_build_system=vhdl_build_system
@@ -165,7 +165,7 @@ make_test_bench = '''#/bin/bash
 echo "make test bench for \'$1\' in Folder \'$2\' "
 
 
-python3 {vhdl_build_system}/vhdl_make_test_bench.py  --EntityName $1 --OutputPath $2
+python3 {vhdl_build_system}/bin_make_test_bench.py  --EntityName $1 --OutputPath $2
 '''.format(
     vhdl_build_system=vhdl_build_system
         )
