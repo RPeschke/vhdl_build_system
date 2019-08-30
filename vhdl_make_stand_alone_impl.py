@@ -59,6 +59,7 @@ def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001,
     connect_input_output += 'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
 
   body = """
+
 library IEEE;
   use IEEE.std_logic_1164.all;
   use IEEE.numeric_std.all;
@@ -73,7 +74,7 @@ library UNISIM;
   use work.{write_pgk}.all;
   use work.{reader_pgk}.all;
   use work.type_conversions_pgk.all;
-  
+  use work.Imp_test_bench_pgk.all;
   
 entity {EntityName} is
   port (
@@ -104,57 +105,145 @@ architecture rtl of {EntityName} is
   signal  RxDataValids   :  sl := '0';
   signal  RxDataLasts    :  sl := '0';
   signal  RxDataReadys   :  sl := '0';
-  
-   constant COLNum : integer := {inputChannels};
-   signal i_data :  Word32Array(COLNum -1 downto 0) := (others => (others => '0'));
-   signal i_valid      : sl := '0';
+  constant FIFO_DEPTH : integer := {FIFO_DEPTH};
+  constant COLNum : integer := {inputChannels};
+  signal i_data :  Word32Array(COLNum -1 downto 0) := (others => (others => '0'));
+  signal i_controls_out    : Imp_test_bench_reader_Control_t  := Imp_test_bench_reader_Control_t_null;
+  signal i_valid      : sl := '0';
    
-   constant COLNum_out : integer := {outputChannel};
-   signal i_data_out :  Word32Array(COLNum_out -1 downto 0) := (others => (others => '0'));
+  constant COLNum_out : integer := {outputChannel};
+  signal i_data_out :  Word32Array(COLNum_out -1 downto 0) := (others => (others => '0'));
    
 
-   signal data_in  : {reader_record} := {reader_record}_null;
-   signal data_out : {writer_record} := {writer_record}_null;
+  signal data_in  : {reader_record} := {reader_record}_null;
+  signal data_out : {writer_record} := {writer_record}_null;
+  
+  signal test_data   : slv(31  downto 0);
+	constant NUM_IP_G        : integer := 2;
+     
+
+  
+  signal ethClk125    : sl;
+     
+  signal ethCoreMacAddr : MacAddrType := MAC_ADDR_DEFAULT_C;
+     
+  signal userRst     : sl;
+  signal ethCoreIpAddr  : IpAddrType  := IP_ADDR_DEFAULT_C;
+  constant ethCoreIpAddr1 : IpAddrType  := (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"{ip0}");
+  constant udpPort        :  slv(15 downto 0):=  x"07D1" ;  -- {Port}
+  signal tpData      : slv(31 downto 0);
+  signal tpDataValid : sl;
+  signal tpDataLast  : sl;
+  signal tpDataReady : sl;
+     
+  -- Test registers
+  -- Default is to send 1000 counter words once per second.
+  signal waitCyclesHigh : slv(15 downto 0) := x"0773";
+  signal waitCyclesLow  : slv(15 downto 0) := x"5940";
+  signal numWords       : slv(15 downto 0) := x"02E9";
+     
+     
+  -- User Data interfaces
+  signal userTxDataChannels : Word32Array(NUM_IP_G-1 downto 0);
+  signal userTxDataValids   : slv(NUM_IP_G-1 downto 0);
+  signal userTxDataLasts    : slv(NUM_IP_G-1 downto 0);
+  signal userTxDataReadys   : slv(NUM_IP_G-1 downto 0);
+  signal userRxDataChannels : Word32Array(NUM_IP_G-1 downto 0);
+  signal userRxDataValids   : slv(NUM_IP_G-1 downto 0);
+  signal userRxDataLasts    : slv(NUM_IP_G-1 downto 0);
+  signal userRxDataReadys   : slv(NUM_IP_G-1 downto 0);
+	  
 begin
   
   U_IBUFGDS : IBUFGDS port map ( I => fabClkP, IB => fabClkN, O => fabClk);
 
-  e2a : entity work.ethernet2axistream port map(
-    clk => fabClk,
-    
-    -- Direct GT connections
-    gtTxP        => gtTxP,
-    gtTxN        => gtTxN,
-    gtRxP        => gtRxP,
-    gtRxN        => gtRxN,
-    gtClkP       => gtClkP, 
-    gtClkN       => gtClkN,
-    
-    
-
-    -- SFP transceiver disable pin
-    txDisable    => txDisable,
-    -- axi stream output
-
-    -- User Data interfaces
-    TxDataChannels => TxDataChannels,
-    TxDataValids   => TxDataValids,
-    TxDataLasts    => TxDataLasts,
-    TxDataReadys   => TxDataReadys,
-    RxDataChannels => RxDataChannels,
-    RxDataValids   => RxDataValids,
-    RxDataLasts    => RxDataLasts,
-    RxDataReadys   => RxDataReadys,
-
-    EthernetIpAddr  => (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"{ip0}"),
-    udpPort        =>    x"07d1"  --  x"{Port}" 
-    
-  );
-  
-  
-  u_reader : entity work.Imp_test_bench_reader 
+  --------------------------------
+  -- Gigabit Ethernet Interface --
+  --------------------------------
+  U_S6EthTop : entity work.S6EthTop
     generic map (
-      COLNum => COLNum 
+      NUM_IP_G     => NUM_IP_G
+    )
+    port map (
+      -- Direct GT connections
+      gtTxP           => gtTxP,
+      gtTxN           => gtTxN,
+      gtRxP           => gtRxP,
+      gtRxN           => gtRxN,
+      gtClkP          => gtClkP,
+      gtClkN          => gtClkN,
+      -- Alternative clock input from fabric
+      fabClkIn        => fabClk,
+      -- SFP transceiver disable pin
+      txDisable       => txDisable,
+      -- Clocks out from Ethernet core
+      ethUsrClk62     => open,
+      ethUsrClk125    => ethClk125,
+      -- Status and diagnostics out
+      ethSync         => open,
+      ethReady        => open,
+      led             => open,
+      -- Core settings in 
+      macAddr         => ethCoreMacAddr,
+      ipAddrs         => (0 => ethCoreIpAddr, 1 => ethCoreIpAddr1),
+      udpPorts        => (0 => x"07D0",       1 => udpPort), --x7D0 = 2000,
+      -- User clock inputs
+      userClk         => ethClk125,
+      userRstIn       => '0',
+      userRstOut      => userRst,
+      -- User data interfaces
+      userTxData      => userTxDataChannels,
+      userTxDataValid => userTxDataValids,
+      userTxDataLast  => userTxDataLasts,
+      userTxDataReady => userTxDataReadys,
+      userRxData      => userRxDataChannels,
+      userRxDataValid => userRxDataValids,
+      userRxDataLast  => userRxDataLasts,
+      userRxDataReady => userRxDataReadys
+    );
+  
+  userTxDataChannels(0) <= tpData;
+  userTxDataValids(0)   <= tpDataValid;
+  userTxDataLasts(0)    <= tpDataLast;
+  tpDataReady           <= userTxDataReadys(0);
+  -- Note that the Channel 0 RX channels are unused here
+  --userRxDataChannels;
+  --userRxDataValids;
+  --userRxDataLasts;
+  userRxDataReadys(0) <= '1';
+  
+  
+  U_TpGenTx : entity work.TpGenTx
+    port map (
+      -- User clock and reset
+      userClk         => ethClk125,
+      userRst         => userRst,
+      -- Configuration
+      waitCycles      => waitCyclesHigh & waitCyclesLow,
+      numWords        => x"0000" & numWords,
+      -- Connection to user logic
+      userTxData      => tpData,
+      userTxDataValid => tpDataValid,
+      userTxDataLast  => tpDataLast,
+      userTxDataReady => tpDataReady
+    );
+  
+  userTxDataChannels(1) <=  TxDataChannels ;
+  userTxDataValids(1)   <=  TxDataValids;
+  userTxDataLasts(1)    <=  TxDataLasts;
+  TxDataReadys          <=  userTxDataReadys(1);
+  
+  RxDataChannels        <=  userRxDataChannels(1);
+  RxDataValids          <=  userRxDataValids(1);
+  RxDataLasts           <=  userRxDataLasts(1);
+  userRxDataReadys(1)   <=  RxDataReadys;          
+  
+  
+  
+  u_reader : entity work.Imp_test_bench_reader
+    generic map (
+      COLNum => COLNum ,
+      FIFO_DEPTH => FIFO_DEPTH
     ) port map (
       Clk       => fabClk,
       -- Incoming data
@@ -163,12 +252,14 @@ begin
       rxDataLast  => RxDataLasts,
       rxDataReady => RxDataReadys,
       data_out    => i_data,
-      valid => i_valid
+      valid => i_valid,
+      controls_out => i_controls_out
     );
 
   u_writer : entity work.Imp_test_bench_writer 
     generic map (
-      COLNum => COLNum_out 
+      COLNum => COLNum_out,
+      FIFO_DEPTH => FIFO_DEPTH
     ) port map (
       Clk      => fabClk,
       -- Incoming data
@@ -177,14 +268,14 @@ begin
       txDataLast  =>  TxDataLasts,
       txDataReady =>  TxDataReadys,
       data_in    => i_data_out,
+      controls_in => i_controls_out,
       Valid      => i_valid
     );
-
-
 
 -- <DUT>
     {DUT}
 -- </DUT>
+
 
 --  <data_out_converter>
 
@@ -203,6 +294,7 @@ begin
 
 
 end architecture;
+
 """.format(
     EntityName=et_name_top,
     inputChannels=11,
@@ -219,7 +311,8 @@ end architecture;
     DUT = dut,
     data_out_converter = data_out_converter,
     data_in_converter = data_in_converter,
-    connect_input_output = connect_input_output
+    connect_input_output = connect_input_output,
+    FIFO_DEPTH = 10
 )
   with open(stand_alone_file,"w",newline="\n") as f:
     f.write(body)

@@ -3,6 +3,7 @@ import shelve
 import fnmatch, re
 
 from vhdl_build_system.vhdl_parser import *
+from vhdl_build_system.vhdl_xgen import *
 
 
 def remove_doublication_from_list(inList):
@@ -86,7 +87,14 @@ def find_used_entities(d,FileName):
     e2 = d[FileName]['entityUSE']
     
     for r in e2:
-        if "work." in r:
+        if "work.xgen_" in r:
+            print("generating package "+ r.replace("work.xgen_","").replace(";",""))
+            r = r.replace("work.", "")
+            ret.append(r)
+            xgen_fileName = vhdl_xgen_make_package(r)
+            xgen_package_def  = vhdl_parser(xgen_fileName)
+            d[f] = xgen_package_def
+        elif "work." in r:
             r = r.replace("work.", "")
             ret.append(r)
     return ret
