@@ -7,13 +7,17 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
+
+print("vhdl_make_stand_alone_impl", currentdir)
 from  vhdl_build_system.vhdl_make_test_bench   import *
 from  vhdl_build_system.vhdl_parser            import *
+from  vhdl_build_system.vhdl_make_test_bench_names                 import *
+
 
 
 
 def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001, path="."):
-  et_name = entityDef[0]["name"]
+  et_name = entityDef.name()
   et_name_top = et_name+"_top"
   stand_alone_file = path+"/"+et_name +"_" + suffix +"_top.vhd"
 
@@ -23,38 +27,32 @@ def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001,
   reader_pgk = get_reader_pgk_name(entityDef)
 
 
-  ports = entityDef[0]["port"]
-  ports = remove_clock_from_ports(ports)    
-  dut = "DUT :  entity work." + et_name + " port map(\n  clk => fabClk"
+  ports = entityDef.ports(RemoveClock=True)
+     
+  dut = "DUT :  entity work." + et_name + " port map(\n  clk => ethClk62"
   for x in ports:
     dut += ",\n  " + x["name"] +" => data_out." + x["name"] 
   dut += "\n);"
 
   data_out_converter = ""
-  ports_ex = expand_types(ports)  
+  ports_ex = entityDef.ports(RemoveClock=True, ExpandTypes=True)
   index = 0
   for x in ports_ex:
-    data_out_converter += get_shortend_typename(x) + '_to_slv(data_out.' + x["name"] + ', i_data_out(' +str(index) +') );\n'
+    data_out_converter += x["type_shorthand"] + '_to_slv(data_out.' + x["name"] + ', i_data_out(' +str(index) +') );\n'
     index+=1 
 
-  ports = entityDef[0]["port"]
-  ports = [x for x in ports if x["InOut"] == "in"]
-  ports = remove_clock_from_ports(ports)
-  ports_ex = expand_types(ports)
+  ports_ex = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock=True, ExpandTypes=True)
 
   data_in_converter = ""
-  ports_ex = expand_types(ports)  
   index = 0
   for x in ports_ex:
-    data_in_converter += "slv_to_" + get_shortend_typename(x) + '(i_data(' +str(index) +'), data_in.' + x["name"] + ');\n'
+    data_in_converter += "slv_to_" + x["type_shorthand"] + '(i_data(' +str(index) +'), data_in.' + x["name"] + ');\n'
     index+=1 
 
 
-  connect_input_output =""
-  ports = entityDef[0]["port"]
-  ports = [x for x in ports if x["InOut"] == "in"]
-  ports = remove_clock_from_ports(ports)
+  ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock=True)
 
+  connect_input_output =""
   for x in ports:
     connect_input_output += 'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
 
@@ -95,8 +93,17 @@ end entity;
 
 architecture rtl of {EntityName} is
   
+  constant Throttel_max_counter : integer  := 10;
+  constant Throttel_wait_time : integer := 100000;
+
   signal fabClk       : sl := '0';
   -- User Data interfaces
+
+  signal  TxDataChannels1 :  DWORD := (others => '0');
+  signal  TxDataValids1   :  sl := '0';
+  signal  TxDataLasts1    :  sl := '0';
+  signal  TxDataReadys1   :  sl := '0';
+
   signal  TxDataChannels :  DWORD := (others => '0');
   signal  TxDataValids   :  sl := '0';
   signal  TxDataLasts    :  sl := '0';
@@ -119,11 +126,12 @@ architecture rtl of {EntityName} is
   signal data_out : {writer_record} := {writer_record}_null;
   
   signal test_data   : slv(31  downto 0);
-	constant NUM_IP_G        : integer := 2;
+  constant NUM_IP_G        : integer := 2;
      
 
   
-  signal ethClk125    : sl;
+  --signal ethClk125    : sl;
+  signal ethClk62    : sl;
      
   signal ethCoreMacAddr : MacAddrType := MAC_ADDR_DEFAULT_C;
      
@@ -152,7 +160,7 @@ architecture rtl of {EntityName} is
   signal userRxDataValids   : slv(NUM_IP_G-1 downto 0);
   signal userRxDataLasts    : slv(NUM_IP_G-1 downto 0);
   signal userRxDataReadys   : slv(NUM_IP_G-1 downto 0);
-	  
+    
 begin
   
   U_IBUFGDS : IBUFGDS port map ( I => fabClkP, IB => fabClkN, O => fabClk);
@@ -177,8 +185,8 @@ begin
       -- SFP transceiver disable pin
       txDisable       => txDisable,
       -- Clocks out from Ethernet core
-      ethUsrClk62     => open,
-      ethUsrClk125    => ethClk125,
+      ethUsrClk62     => ethClk62,
+      ethUsrClk125    => open,
       -- Status and diagnostics out
       ethSync         => open,
       ethReady        => open,
@@ -188,7 +196,7 @@ begin
       ipAddrs         => (0 => ethCoreIpAddr, 1 => ethCoreIpAddr1),
       udpPorts        => (0 => x"07D0",       1 => udpPort), --x7D0 = 2000,
       -- User clock inputs
-      userClk         => ethClk125,
+      userClk         => ethClk62,
       userRstIn       => '0',
       userRstOut      => userRst,
       -- User data interfaces
@@ -216,7 +224,7 @@ begin
   U_TpGenTx : entity work.TpGenTx
     port map (
       -- User clock and reset
-      userClk         => ethClk125,
+      userClk         => ethClk62,
       userRst         => userRst,
       -- Configuration
       waitCycles      => waitCyclesHigh & waitCyclesLow,
@@ -245,7 +253,7 @@ begin
       COLNum => COLNum ,
       FIFO_DEPTH => FIFO_DEPTH
     ) port map (
-      Clk       => fabClk,
+      Clk       => ethClk62,
       -- Incoming data
       rxData      => RxDataChannels,
       rxDataValid => RxDataValids,
@@ -261,17 +269,33 @@ begin
       COLNum => COLNum_out,
       FIFO_DEPTH => FIFO_DEPTH
     ) port map (
-      Clk      => fabClk,
+      Clk      => ethClk62,
       -- Incoming data
-      tXData      =>  TxDataChannels,
-      txDataValid =>  TxDataValids,
-      txDataLast  =>  TxDataLasts,
-      txDataReady =>  TxDataReadys,
+      tXData      =>  TxDataChannels1,
+      txDataValid =>  TxDataValids1,
+      txDataLast  =>  TxDataLasts1,
+      txDataReady =>  TxDataReadys1,
       data_in    => i_data_out,
       controls_in => i_controls_out,
       Valid      => i_valid
     );
+throttel : entity work.axiStreamThrottle 
+    generic map (
+        max_counter => Throttel_max_counter,
+        wait_time   => Throttel_wait_time
+    ) port map (
+        clk           => ethClk62,
 
+        rxData         =>  TxDataChannels1,
+        rxDataValid    =>  TxDataValids1,
+        rxDataLast     =>  TxDataLasts1,
+        rxDataReady    =>  TxDataReadys1,
+
+        tXData          => TxDataChannels,
+        txDataValid     => TxDataValids,
+        txDataLast      => TxDataLasts,
+        txDataReady    =>  TxDataReadys
+    );
 -- <DUT>
     {DUT}
 -- </DUT>

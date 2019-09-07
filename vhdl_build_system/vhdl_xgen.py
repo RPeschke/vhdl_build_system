@@ -6,8 +6,7 @@ sys.path.insert(0,parentdir)
 from  vhdl_build_system.vhdl_make_test_bench   import *
 from  vhdl_build_system.vhdl_parser            import *
 
-from  vhdl_make_test_bench   import *
-from  vhdl_parser            import *
+
 
 def make_xgen(scriptName,PackageName,path="build/"):
     flist = getListOfFiles(".", "*/" + scriptName + ".py")

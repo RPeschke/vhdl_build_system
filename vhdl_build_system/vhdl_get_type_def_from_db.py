@@ -1,13 +1,14 @@
-import shelve
 
 import os
 import fnmatch, re
+from  vhdl_build_system.vhdl_db                import *
 
 BuildFolder = 'build/'
 DataBaseFile=BuildFolder+"DependencyBD"
 
 def get_type_from_name(name):
-    d = shelve.open(DataBaseFile) 
+    
+    d = LoadDB(DataBaseFile) 
     for k in d.keys():
         t = d[k]["Type_Def_detail"]
         e = d[k]["entityDef"]

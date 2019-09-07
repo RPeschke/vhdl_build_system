@@ -2,7 +2,9 @@ import os
 import shelve
 import fnmatch, re
 
-from vhdl_build_system.vhdl_parser import *
+
+from vhdl_build_system.vhdl_db import *
+#from vhdl_build_system.vhdl_parser import *
 from vhdl_build_system.vhdl_xgen import *
 
 
@@ -25,7 +27,8 @@ def try_make_dir(name,isRelativePath=True):
 
 
 def vhdl_get_dependencies_internal(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
-    d = shelve.open(DataBaseFile)
+    
+    d = LoadDB(DataBaseFile)
     TB_entity = Entity
     eneties_used ={}
   

@@ -1,0 +1,11 @@
+from  vhdl_build_system.vhdl_parser                import *
+#from  vhdl_build_system.vhdl_get_dependencies      import *
+def entity2FileName(entityName,BuildFolder = "build/",reparse=True):
+        
+    DataBaseFile=BuildFolder+"DependencyBD"
+    if reparse:
+        vhdl_parse_folder(Folder= ".",DataBaseFile=DataBaseFile)
+    
+    d = LoadDB(DataBaseFile) 
+    entity =  find_entity(d, entityName)
+    return entity

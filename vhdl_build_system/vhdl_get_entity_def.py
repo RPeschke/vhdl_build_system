@@ -105,7 +105,6 @@ def get_list(Entity_def, listName):
   
 
 def vhdl_get_entity_def(FileName):
-    print("dsadasd")
     fc = load_file_witout_comments(FileName)
     candidates =  fc.split("entity")
     entity_list = list()

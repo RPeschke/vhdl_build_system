@@ -1,4 +1,5 @@
 import os
+import pickle
 import shelve
 import fnmatch, re
 import os,sys,inspect
@@ -6,12 +7,15 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
+print ( "vhdl_parser", currentdir)
+
 from vhdl_build_system.vhdl_get_type_def import *
 
 from vhdl_build_system.vhdl_load_file_without_comments import * 
-from  vhdl_build_system.vhdl_get_type_def import * 
+from vhdl_build_system.vhdl_db import *
 
-from  vhdl_get_type_def import * 
+
+
 
 
 def getListOfFiles(dirName, Pattern = '*.*'):
@@ -116,17 +120,9 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
 
 
 def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
-    try:
-        os.remove(DataBaseFile+".bak")
-        os.remove(DataBaseFile+".dat")
-        os.remove(DataBaseFile+".dir")  
-    except OSError:  
-        print ("removing of DBfile  %s failed" % DataBaseFile)
-    else:  
-        print ("Successfully removed DB file %s " % DataBaseFile)
 
 
-    d = shelve.open(DataBaseFile) 
+    d = LoadDB(DataBaseFile,True)
     flist = getListOfFiles(Folder,"*.vhd")
     for f in flist:
         if "build/" not in f:
@@ -140,7 +136,7 @@ def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
             ret = vhdl_parse_xco(f)
             print(f)
             d[f] = ret
-
-    d.close()   
+    
+    saveDB(DataBaseFile,d)
 
 
