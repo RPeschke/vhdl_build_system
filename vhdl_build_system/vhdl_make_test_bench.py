@@ -190,7 +190,7 @@ end entity;
 architecture Behavioral of {reader_entity} is 
 
   constant  NUM_COL    : integer := {NUM_COL};
-  signal    csv_r_data : c_integer_array(NUM_COL downto 0)  := (others=>0)  ;
+  signal    csv_r_data : c_integer_array(NUM_COL -1 downto 0)  := (others=>0)  ;
 begin
 
   csv_r :entity  work.csv_read_file 
@@ -264,7 +264,7 @@ end entity;
 
 architecture Behavioral of {write_entity} is 
   constant  NUM_COL : integer := {NUM_COL};
-  signal data_int   : c_integer_array(NUM_COL downto 0)  := (others=>0);
+  signal data_int   : c_integer_array(NUM_COL - 1 downto 0)  := (others=>0);
 begin
 
     csv_w : entity  work.csv_write_file 
