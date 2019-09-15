@@ -1,3 +1,67 @@
+
+from vhdl_build_system.vhdl_get_type_def_from_db  import *
+
+knownName= list()
+
+def expand_types_records(portDef,TypeDef):
+    ret = list()
+    for x in TypeDef['record']:
+        e = {}
+        e['name'] = portDef['name'] + "." + x['name']
+        e['type'] = x['type'] 
+        e['InOut'] =  'in'
+        e['default'] =  None
+        ret.append(e)
+
+
+    return ret
+
+def input_get_constant(numStr):
+    try:
+        i0 = int(numStr)
+    except:
+        for x in knownName:
+            if x["name"] == numStr.strip():
+                i0 = x["value"]
+                return i0
+
+
+        i0 = input("unkown Variable: "+ numStr+"\nplease enter its value:")
+        i0 =input_get_constant(i0)
+        newName = {}
+        newName["name"] = numStr.strip()
+        newName["value"] = i0
+        knownName.append(newName)
+
+    return i0
+
+
+def expand_types_arrays(portDef,TypeDef):
+    ret = list()
+    array_length = TypeDef["array_length"]
+    sp = array_length.split("downto")
+    if len(sp) == 1:
+         sp = array_length.split("to")
+    
+    i0 = input_get_constant(sp[0])
+    i1 = input_get_constant(sp[1])
+    
+    max_index = max(i0,i1)
+
+    min_index = min(i0,i1)
+
+    
+    for x in range(min_index,max_index):
+        e = {}
+        e['name'] = portDef['name'] + "(" + str(x) +")"
+        
+        e['type'] = TypeDef['BaseType']
+        e['InOut'] =  'in'
+        e['default'] =  None
+        ret.append(e)
+    return ret
+
+
 def isPrimitiveType(typeName):
     if typeName == "std_logic":
         return True
@@ -7,6 +71,10 @@ def isPrimitiveType(typeName):
         return True
 
     return False
+
+
+
+
 
 def get_shortend_typename(portdef):
    
@@ -18,6 +86,11 @@ def get_shortend_typename(portdef):
     
     return ty
 
+def set_short_hand(portdef):
+    for x in portdef:
+        x["type_shorthand"]=get_shortend_typename(x)
+
+    return portdef
 
 def remove_clock_from_ports(ports):
     ports = [x for x in ports if x["name"] != "clk"]
@@ -48,25 +121,30 @@ def expand_types(ports):
                 array = expand_types_arrays(p,type_def)
                 for a in array:
                     ret.append(a)
-        
-        p["type_shorthand"]=get_shortend_typename(p)
+
                 
     return ret
 
+
+def set_default_value(ports):
+    print(ports)
+    for x in ports:
+        if x["default"]:
+            nullValue = x["default"]
+        elif x["type"] == "std_logic":
+            nullValue = "'0'"
+        elif "std_logic_vector" in x["type"] :
+            nullValue = "(others => '0')"
+        else:
+            nullValue = x["type"]+"_null"
+            
+        x["default"]=nullValue
+
+    return ports
+        
+
 class vhdl_entity:
     def __init__(self,entityDef):
-        for x in entityDef["port"]:
-            if x["default"]:
-                nullValue = x["default"]
-            elif x["type"] == "std_logic":
-                nullValue = "'0'"
-            elif "std_logic_vector" in x["type"] :
-                nullValue = "(others => '0')"
-            else:
-                nullValue = x["type"]+"_null"
-            
-            x["default"]=nullValue
-
         self.entityDef = entityDef
 
     def name(self):
@@ -87,6 +165,8 @@ class vhdl_entity:
         
        
         ports = port_to_plain_text(ports)
+        ports = set_short_hand(ports)
+        ports = set_default_value(ports)
 
         return ports
 
