@@ -114,7 +114,7 @@ def vhdl_get_entity_def(FileName):
         words = list(filter(None, words)) 
         if len(words)  > 1  and  "is" in words[1]:
             ret["name"] = words[0]
-            full_entity = x.split("end")[0]
+            full_entity = x.split(" end ")[0]
         
             print(full_entity)
             generic = get_list(full_entity,"generic")

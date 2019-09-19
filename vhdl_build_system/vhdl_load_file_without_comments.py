@@ -21,4 +21,5 @@ def load_file_witout_comments(FileName):
     FileContent = FileContent.replace(":", " : ")
     FileContent = FileContent.replace(": =", " := ")
     FileContent =FileContent.lower()
+    FileContent =' '.join(FileContent.split())
     return FileContent
