@@ -4,7 +4,7 @@ import fnmatch, re
 
 
 from vhdl_build_system.vhdl_db import *
-#from vhdl_build_system.vhdl_parser import *
+from vhdl_build_system.vhdl_parser import *
 from vhdl_build_system.vhdl_xgen import *
 
 
@@ -90,16 +90,10 @@ def find_used_entities(d,FileName):
     e2 = d[FileName]['entityUSE']
     
     for r in e2:
-        if "work.xgen_" in r:
-            print("generating package "+ r.replace("work.xgen_","").replace(";",""))
+        if "work." in r:
             r = r.replace("work.", "")
             ret.append(r)
-            xgen_fileName = vhdl_xgen_make_package(r)
-            xgen_package_def  = vhdl_parser(xgen_fileName)
-            d[f] = xgen_package_def
-        elif "work." in r:
-            r = r.replace("work.", "")
-            ret.append(r)
+
     return ret
 
 
@@ -125,12 +119,21 @@ def find_used_components(d,FileName):
 
 
 def find_PacketDef(d,Entity):
+    #print(Entity)
     for k in d.keys():
         for e in d[k]['packageDef']:
             if e.lower() == Entity.lower():
+                #print(Entity , d[k]['FileName'])
                 return d[k]['FileName']
 
-    raise Exception("unable to find package " +Entity)
+    xgen_fileObj = vhdl_xgen_make_package(Entity)
+    if xgen_fileObj == None:
+        raise Exception("unable to find package " +Entity)
+
+
+    d[xgen_fileObj["FileName"]] = xgen_fileObj
+
+    return xgen_fileObj["FileName"]
 
 
 def find_used_package(d,FileName):
@@ -139,6 +142,8 @@ def find_used_package(d,FileName):
 
     for r in e1:
         ret.append(r)
+        
+
     return ret
 
 

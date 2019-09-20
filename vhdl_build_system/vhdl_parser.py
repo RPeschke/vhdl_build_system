@@ -7,43 +7,27 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
-print ( "vhdl_parser", currentdir)
+from vhdl_build_system.vhdl_get_list_of_files import *
+
+
 
 from vhdl_build_system.vhdl_get_type_def import *
 
 from vhdl_build_system.vhdl_load_file_without_comments import * 
 from vhdl_build_system.vhdl_db import *
 
+from vhdl_build_system.vhdl_get_list_of_files import *
 
 
 
 
-def getListOfFiles(dirName, Pattern = '*.*'):
-    # create a list of file and sub directories 
-    # names in the given directory 
-    regex = fnmatch.translate(Pattern)
-    Include_regEX = re.compile(regex)
-    listOfFile = os.listdir(dirName)
-    allFiles = list()
-    # Iterate over all the entries
-    for entry in listOfFile:
-        # Create full path
-        fullPath = os.path.join(dirName, entry)
-        # If entry is a directory then get the list of files in this directory 
-        if os.path.isdir(fullPath):
-            allFiles = allFiles + getListOfFiles(fullPath,Pattern)
-        elif Include_regEX.match(fullPath) :
-            fullPath = fullPath.replace("\\","/")
-            allFiles.append(fullPath)
-                
-    return allFiles
 
 def vhdl_parse_xco(FileName):
     ret = {}
     ret["FileName"] = FileName
     
     baseName = FileName.split("/")[-1].split(".xco")[0]
-    print(baseName)
+    #print(baseName)
     entities_def=[]
     entities_def.append(baseName)
     ret["entityDef"]= entities_def
@@ -121,12 +105,12 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
 
 def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
 
-
+    print ( '<vhdl_parse_folder FolderName="'+ Folder +'">')
     d = LoadDB(DataBaseFile,True)
     flist = getListOfFiles(Folder,"*.vhd")
     for f in flist:
         if "build/" not in f:
-            print(f)
+            #print(f)
             ret= vhdl_parser(f)
             d[f] = ret
     
@@ -134,9 +118,11 @@ def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
     for f in flist:
         if "build/" not in f:
             ret = vhdl_parse_xco(f)
-            print(f)
+            #print(f)
             d[f] = ret
     
     saveDB(DataBaseFile,d)
+    
+    print ( '</vhdl_parse_folder>')
 
 

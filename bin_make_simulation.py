@@ -15,9 +15,10 @@ def main():
     if len(sys.argv) > 1:
         Entity = sys.argv[1]
     else:
-        Entity= "tb_fifo"
+        Entity= "serialdataroutprocess_cl_tb_csv"
 
     print('Entity: ' , Entity)
+    try_make_dir("./backup/xgen")
     vhdl_make_simulation(Entity)
 
 if __name__== "__main__":

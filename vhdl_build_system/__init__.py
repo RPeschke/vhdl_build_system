@@ -14,7 +14,8 @@ __all__=[
     "vhdl_parser",
     "vhdl_run_test_case",
     "vhdl_test_cases_report_gen",
-    "vhdl_xgen"
+    "vhdl_xgen",
+    "vhdl_parser1",
 
 
 ]
