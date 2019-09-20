@@ -3,15 +3,13 @@ import socket
 
 
 import os,sys,inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir) 
 
 
-print("vhdl_make_stand_alone_impl", currentdir)
-from  vhdl_build_system.vhdl_make_test_bench   import *
-from  vhdl_build_system.vhdl_parser            import *
-from  vhdl_build_system.vhdl_make_test_bench_names                 import *
+
+
+from  .vhdl_make_test_bench   import *
+from  .vhdl_parser            import *
+from  .vhdl_make_test_bench_names                 import *
 
 
 

@@ -6,13 +6,13 @@ parentdir = os.path.dirname(currentdir)
 
 print("vhdl_make_test_bench", currentdir)
 
-from  vhdl_build_system.vhdl_get_dependencies      import *
-from  vhdl_build_system.vhdl_parser                import *
-from  vhdl_build_system.vhdl_get_entity_def        import *
-from  vhdl_build_system.vhdl_get_type_def_from_db  import *
-from  vhdl_build_system.vhdl_make_stand_alone_impl import *
-from  vhdl_build_system.vhdl_db                    import *
-from  vhdl_build_system.vhdl_make_test_bench_names import *
+from  .vhdl_get_dependencies      import *
+from  .vhdl_parser                import *
+from  .vhdl_get_entity_def        import *
+from  .vhdl_get_type_def_from_db  import *
+from  .vhdl_make_stand_alone_impl import *
+from  .vhdl_db                    import *
+from  .vhdl_make_test_bench_names import *
 
 
 

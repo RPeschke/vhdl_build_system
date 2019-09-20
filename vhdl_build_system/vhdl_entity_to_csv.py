@@ -2,9 +2,9 @@
 import sys
 
 import os,sys,inspect
-from  vhdl_parser import *
-from  vhdl_get_dependencies import *
-from  vhdl_get_entity_def import *
+from   .vhdl_parser  import *
+from  .vhdl_get_dependencies  import *
+from  .vhdl_get_entity_def  import *
 
 
 

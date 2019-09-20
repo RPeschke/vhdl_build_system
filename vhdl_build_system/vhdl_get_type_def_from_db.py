@@ -1,7 +1,7 @@
 
 import os
 import fnmatch, re
-from  vhdl_build_system.vhdl_db                import *
+from  .vhdl_db                import *
 
 BuildFolder = 'build/'
 DataBaseFile=BuildFolder+"DependencyBD"

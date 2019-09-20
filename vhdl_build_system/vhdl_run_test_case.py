@@ -4,8 +4,7 @@ import six
 import xml.etree.ElementTree as ET
 import subprocess
 from os.path import relpath
-from  vhdl_make_simulation import *
-from  vhdl_test_cases_report_gen import *
+
 import pandas as pd
 from tabulate import tabulate
 from shutil import copyfile
@@ -19,6 +18,10 @@ import pandas as pd
 from pylab import *
 import matplotlib.colors
 from matplotlib.pyplot import figure
+
+
+from  .vhdl_make_simulation import *
+from  .vhdl_test_cases_report_gen import *
 
 def plot_dataset_pcolor(df,FileName):
     Values = df.values

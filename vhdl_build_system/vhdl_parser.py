@@ -3,20 +3,18 @@ import pickle
 import shelve
 import fnmatch, re
 import os,sys,inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir) 
 
-from vhdl_build_system.vhdl_get_list_of_files import *
+
+from .vhdl_get_list_of_files import *
 
 
 
-from vhdl_build_system.vhdl_get_type_def import *
+from .vhdl_get_type_def import *
 
-from vhdl_build_system.vhdl_load_file_without_comments import * 
-from vhdl_build_system.vhdl_db import *
+from .vhdl_load_file_without_comments import * 
+from .vhdl_db import *
 
-from vhdl_build_system.vhdl_get_list_of_files import *
+from .vhdl_get_list_of_files import *
 
 
 

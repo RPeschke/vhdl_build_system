@@ -3,9 +3,9 @@ import shelve
 import fnmatch, re
 
 
-from vhdl_build_system.vhdl_db import *
-from vhdl_build_system.vhdl_parser import *
-from vhdl_build_system.vhdl_xgen import *
+from .vhdl_db import *
+from .vhdl_parser import * 
+from .vhdl_xgen import *
 
 
 def remove_doublication_from_list(inList):
@@ -28,7 +28,7 @@ def try_make_dir(name,isRelativePath=True):
 
 def vhdl_get_dependencies_internal(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
     
-    d = LoadDB(DataBaseFile)
+    d =LoadDB(DataBaseFile)
     TB_entity = Entity
     eneties_used ={}
   

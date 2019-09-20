@@ -1,5 +1,5 @@
 
-from vhdl_build_system.vhdl_get_type_def_from_db  import *
+from .vhdl_get_type_def_from_db  import *
 
 knownName= list()
 
