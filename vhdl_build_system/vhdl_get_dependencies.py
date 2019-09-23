@@ -26,7 +26,7 @@ def try_make_dir(name,isRelativePath=True):
         print ("Successfully created the directory %s " % name)
 
 
-def vhdl_get_dependencies_internal(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
+def vhdl_get_dependencies_internal(Entity,DataBaseFile="build/DependencyBD"):
     
     d =LoadDB(DataBaseFile)
     TB_entity = Entity
@@ -50,13 +50,14 @@ def vhdl_get_dependencies_internal(Entity,OutputFile=None,DataBaseFile="build/De
             fileList.append(FileName)
         else:
             print("doublication "+ FileName)
-            
+
+    saveDB(DataBaseFile,d)      
     return fileList        
     
 def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
     
     
-    fileList = vhdl_get_dependencies_internal(Entity, OutputFile, DataBaseFile)
+    fileList = vhdl_get_dependencies_internal(Entity, DataBaseFile)
     
     if not OutputFile:
         OutputFile =  "build/" +Entity+"/"+Entity+".prj"

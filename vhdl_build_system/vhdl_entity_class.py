@@ -39,6 +39,9 @@ def input_get_constant(numStr):
 def expand_types_arrays(portDef,TypeDef):
     ret = list()
     array_length = TypeDef["array_length"]
+    if "range" in array_length:
+        print("Unbound array")
+        
     sp = array_length.split("downto")
     if len(sp) == 1:
          sp = array_length.split("to")
@@ -159,7 +162,12 @@ class vhdl_entity:
             ports = [x for x in ports if Filter(x)]
 
         if ExpandTypes:
-            ports = expand_types(ports)  
+            new_length = 100000
+            old_length = len(ports)
+            while new_length >  old_length:
+                old_length = len(ports)
+                ports = expand_types(ports)
+                new_length = len(ports)
         
 
         

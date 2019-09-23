@@ -16,10 +16,14 @@ def LoadDB(FileName,NewDB=False):
       return data
 
   
-  with open(FileName, 'rb') as f:
-      # The protocol version used is detected automatically, so we do not
-      # have to specify it.
+  
+  try:
+    with open(FileName, 'rb') as f:
       data = pickle.load(f) 
+
+  except:
+    data={}
+
   
   return data
 

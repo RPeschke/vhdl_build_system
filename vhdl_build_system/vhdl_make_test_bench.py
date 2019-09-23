@@ -4,7 +4,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 #sys.path.insert(0,parentdir) 
 
-print("vhdl_make_test_bench", currentdir)
+
 
 from  .vhdl_get_dependencies      import *
 from  .vhdl_parser                import *
@@ -14,8 +14,37 @@ from  .vhdl_make_stand_alone_impl import *
 from  .vhdl_db                    import *
 from  .vhdl_make_test_bench_names import *
 
+from  .vhdl_entity2FileName       import *
+from  .vhdl_entity_class          import *
 
 
+def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
+      
+    InputFile = entity2FileName(EntityName)
+    NumberOfRows = int(NumberOfRows)
+    entityDef = vhdl_get_entity_def(InputFile)
+    entetyCl  =  vhdl_entity(entityDef[0])
+    vhdl_get_dependencies_internal(EntityName)
+    
+    ParsedFile = vhdl_parser.vhdl_parser(InputFile)
+
+    make_package_file(entetyCl,"none","write",ParsedFile["packageUSE"], OutputPath)
+    make_package_file(entetyCl,"out","read",ParsedFile["packageUSE"], OutputPath)
+
+    make_read_entity(entetyCl,OutputPath)
+    make_write_entity(entetyCl,OutputPath)
+    tb_entity = make_test_bench_for_test_cases(entetyCl, OutputPath)
+    sim_in_filename =  OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".csv"
+    
+    make_sim_csv_file(entetyCl,sim_in_filename,"out",NrOfEntires=NumberOfRows)
+    sim_out_filename =  OutputPath+"/"+get_test_bench_file_basename(entetyCl)+"_out.csv"
+    make_sim_csv_file(entetyCl,sim_out_filename,"none",NrOfEntires=NumberOfRows)
+    
+    make_xml_test_case(entetyCl, OutputPath)
+    make_stand_alone_impl( entityDef = entetyCl , path =  OutputPath, suffix= "")
+
+    print("generated test bench file", tb_entity)
+    
 
 
 def writeFile(FileName,Content):
@@ -321,6 +350,8 @@ end behavior;
     )
 
     writeFile(tb_entity_file, testBenchStr)
+
+    return tb_entity
 
 
 
