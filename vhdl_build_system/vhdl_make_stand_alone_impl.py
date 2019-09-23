@@ -11,34 +11,33 @@ from  .vhdl_make_test_bench   import *
 from  .vhdl_parser            import *
 from  .vhdl_make_test_bench_names                 import *
 
-
-
-
-def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001, path="."):
-  et_name = entityDef.name()
-  et_name_top = et_name+"_top"
-  stand_alone_file = path+"/"+et_name +"_" + suffix +"_top.vhd"
-
-  ip = binascii.hexlify(socket.inet_aton(ipAddr)).upper()
-
-  write_pgk = get_writer_pgk_name(entityDef)
-  reader_pgk = get_reader_pgk_name(entityDef)
-
-
+def make_stand_alone_entity_get_DUT(entityDef):
   ports = entityDef.ports(RemoveClock=True)
-     
-  dut = "DUT :  entity work." + et_name + " port map(\n  clk => ethClk125"
+  et_name = entityDef.name()
+  dut = "DUT :  entity work." + et_name + " port map(\n  clk => clk"
   for x in ports:
     dut += ",\n  " + x["name"] +" => data_out." + x["name"] 
   dut += "\n);"
+  return dut
 
+def make_stand_alone_entity_get_data_out_converter(entityDef):
   data_out_converter = ""
   ports_ex_all = entityDef.ports(RemoveClock=True, ExpandTypes=True)
   index = 0
   for x in ports_ex_all:
     data_out_converter += x["type_shorthand"] + '_to_slv(data_out.' + x["name"] + ', i_data_out(' +str(index) +') );\n'
     index+=1 
+  return  data_out_converter, len(ports_ex_all)
 
+def make_stand_alone_entity_get_connect_input_output(entityDef):
+  ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock=True)
+
+  connect_input_output =""
+  for x in ports:
+    connect_input_output += 'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
+  return connect_input_output
+
+def make_stand_alone_entity_get_data_in_converter(entityDef):
   ports_ex_input = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock=True, ExpandTypes=True)
 
   data_in_converter = ""
@@ -47,12 +46,193 @@ def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001,
     data_in_converter += "slv_to_" + x["type_shorthand"] + '(i_data(' +str(index) +'), data_in.' + x["name"] + ');\n'
     index+=1 
 
+  return data_in_converter, len(ports_ex_input)
 
-  ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock=True)
 
-  connect_input_output =""
-  for x in ports:
-    connect_input_output += 'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
+def make_stand_alone_entity(entityDef , suffix,path):
+  et_name = entityDef.name()
+  et_name_eth = et_name+"_eth"  
+
+  stand_alone_file = path+"/"+et_name +"_" + suffix +"_eth.vhd"
+
+  
+  ports = entityDef.ports(RemoveClock=True)
+ 
+  dut =make_stand_alone_entity_get_DUT(entityDef)
+
+  data_out_converter,ports_ex_output_len =make_stand_alone_entity_get_data_out_converter(entityDef)
+  
+  data_in_converter,ports_ex_input_len = make_stand_alone_entity_get_data_in_converter(entityDef)
+
+  connect_input_output = make_stand_alone_entity_get_connect_input_output(entityDef)
+
+
+  body = """
+
+library IEEE;
+  use IEEE.std_logic_1164.all;
+  use IEEE.numeric_std.all;
+
+library UNISIM;
+  use UNISIM.VComponents.all;
+  use work.UtilityPkg.all;
+
+  use work.{write_pgk}.all;
+  use work.{reader_pgk}.all;
+  use work.type_conversions_pgk.all;
+  use work.Imp_test_bench_pgk.all;
+  
+entity {EntityName} is
+  port (
+    clk : in std_logic;
+    TxDataChannel : out  DWORD := (others => '0');
+    TxDataValid   : out  sl := '0';
+    TxDataLast    : out  sl := '0';
+    TxDataReady   : in   sl := '0';
+    RxDataChannel : in   DWORD := (others => '0');
+    RxDataValid   : in   sl := '0';
+    RxDataLast    : in   sl := '0';
+    RxDataReady   : out  sl := '0'
+  );
+end entity;
+
+architecture rtl of {EntityName} is
+  
+  constant Throttel_max_counter : integer  := 10;
+  constant Throttel_wait_time : integer := 100000;
+
+  -- User Data interfaces
+
+
+
+  signal  i_TxDataChannels :  DWORD := (others => '0');
+  signal  i_TxDataValids   :  sl := '0';
+  signal  i_TxDataLasts    :  sl := '0';
+  signal  i_TxDataReadys   :  sl := '0';
+
+  constant FIFO_DEPTH : integer := {FIFO_DEPTH};
+  constant COLNum : integer := {inputChannels};
+  signal i_data :  Word32Array(COLNum -1 downto 0) := (others => (others => '0'));
+  signal i_controls_out    : Imp_test_bench_reader_Control_t  := Imp_test_bench_reader_Control_t_null;
+  signal i_valid      : sl := '0';
+   
+  constant COLNum_out : integer := {outputChannel};
+  signal i_data_out :  Word32Array(COLNum_out -1 downto 0) := (others => (others => '0'));
+   
+
+  signal data_in  : {reader_record} := {reader_record}_null;
+  signal data_out : {writer_record} := {writer_record}_null;
+  
+begin
+  
+  
+  
+  u_reader : entity work.Imp_test_bench_reader
+    generic map (
+      COLNum => COLNum ,
+      FIFO_DEPTH => FIFO_DEPTH
+    ) port map (
+      Clk          => clk,
+      -- Incoming data
+      rxData       => RxDataChannel,
+      rxDataValid  => RxDataValid,
+      rxDataLast   => RxDataLast,
+      rxDataReady  => RxDataReady,
+      -- outgoing data
+      data_out     => i_data,
+      valid        => i_valid,
+      controls_out => i_controls_out
+    );
+
+  u_writer : entity work.Imp_test_bench_writer 
+    generic map (
+      COLNum => COLNum_out,
+      FIFO_DEPTH => FIFO_DEPTH
+    ) port map (
+      Clk      => clk,
+      -- Outgoing  data
+      tXData      =>  i_TxDataChannels,
+      txDataValid =>  i_TxDataValids,
+      txDataLast  =>  i_TxDataLasts,
+      txDataReady =>  i_TxDataReadys,
+      -- incomming data 
+      data_in    => i_data_out,
+      controls_in => i_controls_out,
+      Valid      => i_valid
+    );
+throttel : entity work.axiStreamThrottle 
+    generic map (
+        max_counter => Throttel_max_counter,
+        wait_time   => Throttel_wait_time
+    ) port map (
+        clk           => clk,
+
+        rxData         =>  i_TxDataChannels,
+        rxDataValid    =>  i_TxDataValids,
+        rxDataLast     =>  i_TxDataLasts,
+        rxDataReady    =>  i_TxDataReadys,
+
+        tXData          => TxDataChannel,
+        txDataValid     => TxDataValid,
+        txDataLast      => TxDataLast,
+        txDataReady     =>  TxDataReady
+    );
+-- <DUT>
+    {DUT}
+-- </DUT>
+
+
+--  <data_out_converter>
+
+{data_out_converter}
+--  </data_out_converter>
+
+-- <data_in_converter> 
+
+{data_in_converter}
+--</data_in_converter>
+
+-- <connect_input_output>
+
+{connect_input_output}
+-- </connect_input_output>
+
+
+end architecture;
+
+""".format(
+    EntityName    = et_name_eth,
+    inputChannels = ports_ex_input_len,
+    outputChannel = ports_ex_output_len,
+ 
+    write_pgk = get_writer_pgk_name(entityDef),
+    reader_pgk =  get_reader_pgk_name(entityDef),
+    reader_record = get_reader_record_name(entityDef),
+    writer_record = get_writer_record_name(entityDef),
+    DUT = dut,
+    data_out_converter = data_out_converter,
+    data_in_converter = data_in_converter,
+    connect_input_output = connect_input_output,
+    FIFO_DEPTH = 10
+)
+  with open(stand_alone_file,"w",newline="\n") as f:
+    f.write(body)
+  return et_name_eth
+
+
+
+
+
+def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001, path="."):
+  
+  eth_et_name = make_stand_alone_entity(entityDef,suffix,path)
+  et_name = entityDef.name()
+  et_name_top = et_name+"_top"
+  stand_alone_file = path+"/"+et_name +"_" + suffix +"_top.vhd"
+
+  ip = binascii.hexlify(socket.inet_aton(ipAddr)).upper()
+
+
 
   body = """
 
@@ -67,8 +247,7 @@ library UNISIM;
   use work.Eth1000BaseXPkg.all;
   use work.GigabitEthPkg.all;
 
-  use work.{write_pgk}.all;
-  use work.{reader_pgk}.all;
+
   use work.type_conversions_pgk.all;
   use work.Imp_test_bench_pgk.all;
   
@@ -90,40 +269,21 @@ entity {EntityName} is
 end entity;
 
 architecture rtl of {EntityName} is
-  
-  constant Throttel_max_counter : integer  := 10;
-  constant Throttel_wait_time : integer := 100000;
+
 
   signal fabClk       : sl := '0';
   -- User Data interfaces
 
-  signal  TxDataChannels1 :  DWORD := (others => '0');
-  signal  TxDataValids1   :  sl := '0';
-  signal  TxDataLasts1    :  sl := '0';
-  signal  TxDataReadys1   :  sl := '0';
+  signal  TxDataChannel :  DWORD := (others => '0');
+  signal  TxDataValid   :  sl := '0';
+  signal  TxDataLast    :  sl := '0';
+  signal  TxDataReady   :  sl := '0';
+  signal  RxDataChannel :  DWORD := (others => '0');
+  signal  RxDataValid   :  sl := '0';
+  signal  RxDataLast    :  sl := '0';
+  signal  RxDataReady   :  sl := '0';
 
-  signal  TxDataChannels :  DWORD := (others => '0');
-  signal  TxDataValids   :  sl := '0';
-  signal  TxDataLasts    :  sl := '0';
-  signal  TxDataReadys   :  sl := '0';
-  signal  RxDataChannels :  DWORD := (others => '0');
-  signal  RxDataValids   :  sl := '0';
-  signal  RxDataLasts    :  sl := '0';
-  signal  RxDataReadys   :  sl := '0';
-  constant FIFO_DEPTH : integer := {FIFO_DEPTH};
-  constant COLNum : integer := {inputChannels};
-  signal i_data :  Word32Array(COLNum -1 downto 0) := (others => (others => '0'));
-  signal i_controls_out    : Imp_test_bench_reader_Control_t  := Imp_test_bench_reader_Control_t_null;
-  signal i_valid      : sl := '0';
-   
-  constant COLNum_out : integer := {outputChannel};
-  signal i_data_out :  Word32Array(COLNum_out -1 downto 0) := (others => (others => '0'));
-   
 
-  signal data_in  : {reader_record} := {reader_record}_null;
-  signal data_out : {writer_record} := {writer_record}_null;
-  
-  signal test_data   : slv(31  downto 0);
   constant NUM_IP_G        : integer := 2;
      
 
@@ -234,110 +394,47 @@ begin
       userTxDataReady => tpDataReady
     );
   
-  userTxDataChannels(1) <=  TxDataChannels ;
-  userTxDataValids(1)   <=  TxDataValids;
-  userTxDataLasts(1)    <=  TxDataLasts;
-  TxDataReadys          <=  userTxDataReadys(1);
+  userTxDataChannels(1) <=  TxDataChannel ;
+  userTxDataValids(1)   <=  TxDataValid;
+  userTxDataLasts(1)    <=  TxDataLast;
+  TxDataReady           <=  userTxDataReadys(1);
   
-  RxDataChannels        <=  userRxDataChannels(1);
-  RxDataValids          <=  userRxDataValids(1);
-  RxDataLasts           <=  userRxDataLasts(1);
-  userRxDataReadys(1)   <=  RxDataReadys;          
+  RxDataChannel        <=  userRxDataChannels(1);
+  RxDataValid          <=  userRxDataValids(1);
+  RxDataLast           <=  userRxDataLasts(1);
+  userRxDataReadys(1)   <=  RxDataReady;     
   
   
   
-  u_reader : entity work.Imp_test_bench_reader
-    generic map (
-      COLNum => COLNum ,
-      FIFO_DEPTH => FIFO_DEPTH
-    ) port map (
+  u_dut  : entity work.{eth_entity}
+    port map (
       Clk       => ethClk125,
       -- Incoming data
-      rxData      => RxDataChannels,
-      rxDataValid => RxDataValids,
-      rxDataLast  => RxDataLasts,
-      rxDataReady => RxDataReadys,
-      data_out    => i_data,
-      valid => i_valid,
-      controls_out => i_controls_out
+      RxDataChannel => RxDataChannel,
+      rxDataValid   => RxDataValid,
+      rxDataLast    => RxDataLast,
+      rxDataReady   => RxDataReady,
+      -- outgoing data  
+      TxDataChannel   => TxDataChannel,
+      TxDataValid     => TxDataValid,
+      txDataLast      => TxDataLast,
+      TxDataReady     =>  TxDataReady
     );
-
-  u_writer : entity work.Imp_test_bench_writer 
-    generic map (
-      COLNum => COLNum_out,
-      FIFO_DEPTH => FIFO_DEPTH
-    ) port map (
-      Clk      => ethClk125,
-      -- Incoming data
-      tXData      =>  TxDataChannels1,
-      txDataValid =>  TxDataValids1,
-      txDataLast  =>  TxDataLasts1,
-      txDataReady =>  TxDataReadys1,
-      data_in    => i_data_out,
-      controls_in => i_controls_out,
-      Valid      => i_valid
-    );
-throttel : entity work.axiStreamThrottle 
-    generic map (
-        max_counter => Throttel_max_counter,
-        wait_time   => Throttel_wait_time
-    ) port map (
-        clk           => ethClk125,
-
-        rxData         =>  TxDataChannels1,
-        rxDataValid    =>  TxDataValids1,
-        rxDataLast     =>  TxDataLasts1,
-        rxDataReady    =>  TxDataReadys1,
-
-        tXData          => TxDataChannels,
-        txDataValid     => TxDataValids,
-        txDataLast      => TxDataLasts,
-        txDataReady    =>  TxDataReadys
-    );
--- <DUT>
-    {DUT}
--- </DUT>
-
-
---  <data_out_converter>
-
-{data_out_converter}
---  </data_out_converter>
-
--- <data_in_converter> 
-
-{data_in_converter}
---</data_in_converter>
-
--- <connect_input_output>
-
-{connect_input_output}
--- </connect_input_output>
-
 
 end architecture;
 
 """.format(
     EntityName=et_name_top,
-    inputChannels=len(ports_ex_input),
-    outputChannel=len(ports_ex_all),
     ip3 = ip[0:2].decode("utf-8"),
     ip2 = ip[2:4].decode("utf-8"),
     ip1 = ip[4:6].decode("utf-8"),
     ip0 = ip[6:8].decode("utf-8"),
     Port = hex(Port),
-    write_pgk = write_pgk,
-    reader_pgk = reader_pgk,
-    reader_record = get_reader_record_name(entityDef),
-    writer_record = get_writer_record_name(entityDef),
-    DUT = dut,
-    data_out_converter = data_out_converter,
-    data_in_converter = data_in_converter,
-    connect_input_output = connect_input_output,
-    FIFO_DEPTH = 10
+    eth_entity = eth_et_name
 )
   with open(stand_alone_file,"w",newline="\n") as f:
     f.write(body)
+
 
 
 

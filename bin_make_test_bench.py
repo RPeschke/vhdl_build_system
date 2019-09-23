@@ -18,8 +18,7 @@ def main():
 
     args = parser.parse_args()
     
-    cwd = os.getcwd()
-    print(cwd)
+
     make_test_bench_main(args.EntityName,args.NumberOfRows, args.OutputPath)
     
 
