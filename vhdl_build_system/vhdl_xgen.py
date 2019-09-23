@@ -19,6 +19,9 @@ def make_xgen(scriptName,PackageName,path="build/"):
 def get_xgen_file(packageName):
     scriptName = packageName.split("_")[1]
     flist = getListOfFiles(".", "*/" + scriptName + ".py")
+    if len(flist) == 0:
+        raise Exception("Unable to locate xgen file for: '" + scriptName+"'")
+    
     return flist[0]
 
 
