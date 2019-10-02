@@ -104,11 +104,23 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
 def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
 
     print ( '<vhdl_parse_folder FolderName="'+ Folder +'">')
-    d = LoadDB(DataBaseFile,True)
+    d = LoadDB(DataBaseFile)
+    print ( '  <getListOfFiles> ')
     flist = getListOfFiles(Folder,"*.vhd")
+
+    print ( '  </getListOfFiles> ')
+    keys = d.keys()
     for f in flist:
         if "build/" not in f:
             #print(f)
+            if f in keys:
+                modTime_file = os.path.getmtime(f)
+                modFile_db = d[f]["Modified"]
+                #print(f,modTime_file,modFile_db )
+                if modTime_file == modFile_db:
+                    continue
+            
+            print("process file: ",f)
             ret= vhdl_parser(f)
             d[f] = ret
     
