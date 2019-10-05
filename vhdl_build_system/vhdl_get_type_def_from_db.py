@@ -30,8 +30,8 @@ def get_type_from_name(name):
     d = LoadDB(DataBaseFile) 
     n_sp = name.split("(")
     plainName = n_sp[0].strip()
-    if len(n_sp) >1:
-        print(n_sp[0],"is array type")
+    #if len(n_sp) >1:
+    #    print(n_sp[0],"is array type")
 
     for k in d.keys():
         t = d[k]["Type_Def_detail"]

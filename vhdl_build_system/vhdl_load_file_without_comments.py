@@ -20,4 +20,6 @@ def load_file_witout_comments(FileName):
     FileContent = FileContent.replace(": =", " := ")
     FileContent =FileContent.lower()
     FileContent =' '.join(FileContent.split())
+    FileContent = FileContent.replace(" slv ", " std_logic_vector ")
+    FileContent = FileContent.replace(" sl ", " std_logic ")
     return FileContent

@@ -114,14 +114,14 @@ def vhdl_get_entity_def(FileName):
             ret["name"] = words[0]
             full_entity = x.split(" end ")[0]
         
-            print(full_entity)
+            #print(full_entity)
             generic = get_list(full_entity,"generic")
             ret["generic"] = generic
-            print(generic)
+            #print(generic)
             ports = get_list(full_entity,"port")
             ret["port"] = ports
-            for x in ports:
-                print(x)
+            #for x in ports:
+            #    print(x)
 
         if len(ret) > 0:
             entity_list.append(ret)

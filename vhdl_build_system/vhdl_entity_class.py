@@ -41,17 +41,17 @@ def expand_types_arrays(portDef,TypeDef):
     array_length = TypeDef["array_length"]
     if "range" in array_length:
         print("Unbound array")
-        
+
     sp = array_length.split("downto")
     if len(sp) == 1:
          sp = array_length.split("to")
-    
     i0 = input_get_constant(sp[0])
     i1 = input_get_constant(sp[1])
     
     max_index = max(i0,i1)
 
     min_index = min(i0,i1)
+
 
     
     for x in range(min_index,max_index):
@@ -71,6 +71,8 @@ def isPrimitiveType(typeName):
     elif "std_logic_vector" in typeName:
         return True
     elif typeName == "integer":
+        return True
+    elif  " slv " in  " " + typeName:
         return True
 
     return False
@@ -130,7 +132,7 @@ def expand_types(ports):
 
 
 def set_default_value(ports):
-    print(ports)
+    #print(ports)
     for x in ports:
         if x["default"]:
             nullValue = x["default"]
@@ -168,6 +170,8 @@ class vhdl_entity:
                 old_length = len(ports)
                 ports = expand_types(ports)
                 new_length = len(ports)
+                if new_length < old_length:
+                    raise Exception("ports got removed")
         
 
         
