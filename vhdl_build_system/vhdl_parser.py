@@ -92,7 +92,7 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
         
         words = x.strip().split(delimiter)
         words = list(filter(None, words)) 
-        if len(words)  > 1 + offset and   suffix in words[1 +offset] and words[0 +offset].strip() not in ret:
+        if len(words)  > 1 + offset and   suffix in words[1 +offset][0:10] and words[0 +offset].strip() not in ret:
             ret.append(words[0 +offset].strip())
             
     
