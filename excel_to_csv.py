@@ -1,3 +1,5 @@
+import os
+from shutil import copyfile
 import pandas as pd
 import argparse
 
@@ -16,7 +18,11 @@ def main():
     parser.add_argument('--SheetXLS',   help='Sheet inside the XLS file',default="Simulation_Input")
     args = parser.parse_args()
     print("\nargs.InputXLS: ",args.InputXLS,"\nargs.SheetXLS",args.SheetXLS,"\nargs.OutputCSV",args.OutputCSV)
-    Convert2CSV123(args.InputXLS,args.SheetXLS,args.OutputCSV)
+    if args.InputXLS.split(".")[-1].lower() == "csv":
+        #skip converting just copying
+        copyfile( args.InputXLS , args.OutputCSV)
+    else:
+        Convert2CSV123(args.InputXLS,args.SheetXLS,args.OutputCSV)
     print("done Converting")
 
 if __name__== "__main__":
