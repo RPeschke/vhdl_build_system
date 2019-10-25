@@ -111,18 +111,22 @@ def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
     print ( '  </getListOfFiles> ')
     keys = d.keys()
     for f in flist:
-        if "build/" not in f:
+        if "build/" in f:
+            continue
+        
+        if "verif/" in f:
+            continue
             #print(f)
-            if f in keys:
-                modTime_file = os.path.getmtime(f)
-                modFile_db = d[f]["Modified"]
-                #print(f,modTime_file,modFile_db )
-                if modTime_file == modFile_db:
-                    continue
+        if f in keys:
+            modTime_file = os.path.getmtime(f)
+            modFile_db = d[f]["Modified"]
             
-            print("process file: ",f)
-            ret= vhdl_parser(f)
-            d[f] = ret
+            if modTime_file == modFile_db:
+                continue
+            
+        print("process file: ",f)
+        ret= vhdl_parser(f)
+        d[f] = ret
     
     flist = getListOfFiles(Folder,"*.xco*")
     for f in flist:

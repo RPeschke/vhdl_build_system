@@ -22,7 +22,7 @@ def vhdl_get_type_def_array(rawText):
         raise Exception("end Token not found")
     
     rawText = sp[0]
-    sp = rawText.split("of")
+    sp = rawText.split(" of ")
     ret["BaseType"] = sp[1].strip()
     
     array_length= get_text_between_outtermost(sp[0],'(',')')
