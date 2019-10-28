@@ -118,6 +118,13 @@ echo "running $1"
 # $1 : Test Bench Name
 # $2 : Input csv File name
 # $3 : output csv File Name
+
+if [ "$3" != "" ]; then
+    rm -f  $3
+fi
+
+python3 vhdl_build_system/excel_to_csv.py --OutputCSV  "$2.csv"  --InputXLS $2 
+
 {line}
 '''.format(
     line=line
@@ -213,6 +220,11 @@ make_bash_file("build_synt.sh",build_synt)
 #   run_on_hardware
 run_on_hardware = '''#/bin/bash
 #$1 entity Name
+#$2 Input File Name
+#$3 Ouput File name
+#$4 IP Address
+#$5 Port
+
 
 if [ "$3" != "" ]; then
     rm -f  $3
@@ -226,7 +238,7 @@ scp firmware-ethernet/scripts/udp_run.py {RunPcSsh}:{RunPcRemote}/
 
 scp {buildpath}/$1/$1.csv {RunPcSsh}:{RunPcRemote}/
 
-ssh {RunPcSsh} "cd {RunPcRemote}/ && ./udp_run.py $1.csv $1_out.csv"
+ssh {RunPcSsh} "cd {RunPcRemote}/ && ./udp_run.py --InputFile $1.csv --OutputFile $1_out.csv --IpAddress $4  --port $5"
 
 scp  {RunPcSsh}:{RunPcRemote}/$1_out.csv  {buildpath}/$1/
 
