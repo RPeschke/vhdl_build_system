@@ -14,7 +14,11 @@ from  .vhdl_make_test_bench_names                 import *
 def make_stand_alone_entity_get_DUT(entityDef):
   ports = entityDef.ports(RemoveClock=True)
   et_name = entityDef.name()
-  dut = "DUT :  entity work." + et_name + " port map(\n  clk => clk"
+  clock_connect = "clk => globals.clk"
+  if entityDef.IsUsingGlobals():
+    clock_connect = "globals => globals"
+
+  dut = "DUT :  entity work." + et_name + " port map(\n  "+ clock_connect
   for x in ports:
     dut += ",\n  " + x["name"] +" => data_out." + x["name"] 
   dut += "\n);"
@@ -84,7 +88,8 @@ library UNISIM;
   
 entity {EntityName} is
   port (
-    clk : in std_logic;
+    globals :  in globals_t := globals_t_null;
+    
     TxDataChannel : out  DWORD := (others => '0');
     TxDataValid   : out  sl := '0';
     TxDataLast    : out  sl := '0';
@@ -92,7 +97,10 @@ entity {EntityName} is
     RxDataChannel : in   DWORD := (others => '0');
     RxDataValid   : in   sl := '0';
     RxDataLast    : in   sl := '0';
-    RxDataReady   : out  sl := '0'
+    RxDataReady   : out  sl := '0';
+
+    TXBus_m2s     : in   DataBus_m2s_a(1 downto 0) := (others => DataBus_m2s_null);
+    TXBus_s2m     : out  DataBus_s2m_a(1 downto 0) := (others => DataBus_s2m_null)
   );
 end entity;
 
@@ -103,7 +111,7 @@ architecture rtl of {EntityName} is
 
   -- User Data interfaces
 
-
+  signal clk : in std_logic;
 
   signal  i_TxDataChannels :  DWORD := (others => '0');
   signal  i_TxDataValids   :  sl := '0';
@@ -125,7 +133,7 @@ architecture rtl of {EntityName} is
   
 begin
   
-  
+  clk <= globals.clk;
   
   u_reader : entity work.Imp_test_bench_reader
     generic map (
@@ -329,15 +337,11 @@ architecture rtl of {EntityName} is
   signal fabClk       : sl := '0';
   -- User Data interfaces
 
-  signal  TxDataChannel :  DWORD := (others => '0');
-  signal  TxDataValid   :  sl := '0';
-  signal  TxDataLast    :  sl := '0';
-  signal  TxDataReady   :  sl := '0';
-  signal  RxDataChannel :  DWORD := (others => '0');
-  signal  RxDataValid   :  sl := '0';
-  signal  RxDataLast    :  sl := '0';
-  signal  RxDataReady   :  sl := '0';
 
+
+
+  signal globals :   globals_t := globals_t_null;
+  signal TX_DAC_control_out :   TX_DAC_control := TX_DAC_control_null;
 
   constant NUM_IP_G        : integer := 2;
      
@@ -345,23 +349,20 @@ architecture rtl of {EntityName} is
   
   signal ethClk125    : sl;
   --signal ethClk62    : sl;
-     
+
+
+
   signal ethCoreMacAddr : MacAddrType := MAC_ADDR_DEFAULT_C;
      
   signal userRst     : sl;
   signal ethCoreIpAddr  : IpAddrType  := IP_ADDR_DEFAULT_C;
   constant ethCoreIpAddr1 : IpAddrType  := (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"{ip0}");
   constant udpPort        :  slv(15 downto 0):=  x"07D1" ;  -- {Port}
-  signal tpData      : slv(31 downto 0);
-  signal tpDataValid : sl;
-  signal tpDataLast  : sl;
-  signal tpDataReady : sl;
+
      
-  -- Test registers
-  -- Default is to send 1000 counter words once per second.
-  signal waitCyclesHigh : slv(15 downto 0) := x"0773";
-  signal waitCyclesLow  : slv(15 downto 0) := x"5940";
-  signal numWords       : slv(15 downto 0) := x"02E9";
+  signal will_clk: std_logic := '0';
+  signal SST_clk_proto: std_logic := '0';
+  signal SST_clk      : std_logic := '0';
      
      
   -- User Data interfaces
@@ -383,43 +384,44 @@ begin
 
 -- <Connecting the BUS to the pseudo class>
   
-  TXBus_m2s(0).ShiftRegister.data_out  <= BUSA_DO;
-           
-  BUSA_WR_ADDRCLR               <= TXBus_s2m(0).WriteSignals.clear;  
-  WR1_ENA(4 downto 0)           <= TXBus_s2m(0).WriteSignals.writeEnable_1;  
-  WR2_ENA(4 downto 0)           <= TXBus_s2m(0).WriteSignals.writeEnable_2;  
-  
-  BUSA_CLR                      <= TXBus_s2m(0).SamplingSignals.clr; 
-  BUSA_RAMP                     <= TXBus_s2m(0).SamplingSignals.ramp;
-  BUSA_RD_COLSEL_S              <= TXBus_s2m(0).SamplingSignals.read_column_select_s;  
-  BUSA_RD_ENA                   <= TXBus_s2m(0).SamplingSignals.read_enable;
-  BUSA_RD_ROWSEL_S              <= TXBus_s2m(0).SamplingSignals.read_row_select_s; 
- 
-  BUSA_SAMPLESEL_S              <= TXBus_s2m(0).ShiftRegister.SampleSelect;
-  BUSA_SR_CLEAR                 <= TXBus_s2m(0).ShiftRegister.sr_clear;
-  BUSA_SR_SEL                   <= TXBus_s2m(0).ShiftRegister.sr_select ;
-  SAMPLESEL_ANY(4 downto 0)     <= TXBus_s2m(0).ShiftRegister.SampleSelectAny;
-  SR_CLOCK(4 downto 0)          <= TXBus_s2m(0).ShiftRegister.sr_Clock;
 
-  
-  
-  TXBus_m2s(1).ShiftRegister.data_out  <= BUSB_DO;
-  
-  BUSA_WR_ADDRCLR               <= TXBus_s2m(1).WriteSignals.clear;  
-  WR1_ENA(9 downto 5)           <= TXBus_s2m(1).WriteSignals.writeEnable_1;  
-  WR2_ENA(9 downto 5)           <= TXBus_s2m(1).WriteSignals.writeEnable_2;  
+ objectMaker: entity work.TX_InterfaceObjectMaker port map(
+   
 
-  BUSB_CLR                      <= TXBus_s2m(1).SamplingSignals.clr; 
-  BUSB_RAMP                     <= TXBus_s2m(1).SamplingSignals.ramp;
-  BUSB_RD_COLSEL_S              <= TXBus_s2m(1).SamplingSignals.read_column_select_s;  
-  BUSB_RD_ENA                   <= TXBus_s2m(1).SamplingSignals.read_enable;
-  BUSB_RD_ROWSEL_S              <= TXBus_s2m(1).SamplingSignals.read_row_select_s; 
-                               
-  BUSB_SAMPLESEL_S              <= TXBus_s2m(1).ShiftRegister.SampleSelect;
-  BUSB_SR_CLEAR                 <= TXBus_s2m(1).ShiftRegister.sr_clear;
-  BUSB_SR_SEL                   <= TXBus_s2m(1).ShiftRegister.sr_select ;
-  SAMPLESEL_ANY(9 downto 5)     <= TXBus_s2m(1).ShiftRegister.SampleSelectAny;
-  SR_CLOCK(9 downto 5)          <= TXBus_s2m(1).ShiftRegister.sr_Clock;
+   BUSA_CLR          =>  BUSA_CLR,           
+   BUSA_RAMP         =>  BUSA_RAMP,          
+   BUSA_WR_ADDRCLR   =>  BUSA_WR_ADDRCLR    ,
+   BUSA_DO           =>  BUSA_DO            ,
+   BUSA_RD_COLSEL_S  =>  BUSA_RD_COLSEL_S   ,
+   BUSA_RD_ENA       =>  BUSA_RD_ENA        ,
+   BUSA_RD_ROWSEL_S  =>  BUSA_RD_ROWSEL_S   ,
+   BUSA_SAMPLESEL_S  =>  BUSA_SAMPLESEL_S   ,
+   BUSA_SR_CLEAR     =>  BUSA_SR_CLEAR      ,
+   BUSA_SR_SEL       =>  BUSA_SR_SEL        ,
+
+   --Bus B Specific Signals
+   BUSB_WR_ADDRCLR        =>BUSB_WR_ADDRCLR      ,
+   BUSB_RD_ENA            =>BUSB_RD_ENA          ,
+   BUSB_RD_ROWSEL_S       =>BUSB_RD_ROWSEL_S     ,
+   BUSB_RD_COLSEL_S       =>BUSB_RD_COLSEL_S     ,
+   BUSB_CLR               =>BUSB_CLR             ,
+   BUSB_RAMP              =>BUSB_RAMP            ,
+   BUSB_SAMPLESEL_S       =>BUSB_SAMPLESEL_S     ,
+   BUSB_SR_CLEAR          =>BUSB_SR_CLEAR        ,
+   BUSB_SR_SEL            =>BUSB_SR_SEL          ,
+   BUSB_DO                =>BUSB_DO              ,
+
+   BUS_REGCLR      => BUS_REGCLR     ,
+   SAMPLESEL_ANY   => SAMPLESEL_ANY  ,
+   SR_CLOCK        => SR_CLOCK       ,
+   WR1_ENA         => WR1_ENA        ,
+   WR2_ENA         => WR2_ENA        ,
+
+   TXBus_m2s => TXBus_m2s,
+   TXBus_s2m => TXBus_s2m
+
+ );
+
   
 -- </Connecting the BUS to the pseudo class>
 
@@ -469,58 +471,105 @@ begin
       userRxDataReady => userRxDataReadys
     );
   
-  userTxDataChannels(0) <= tpData;
-  userTxDataValids(0)   <= tpDataValid;
-  userTxDataLasts(0)    <= tpDataLast;
-  tpDataReady           <= userTxDataReadys(0);
-  -- Note that the Channel 0 RX channels are unused here
-  --userRxDataChannels;
-  --userRxDataValids;
-  --userRxDataLasts;
-  userRxDataReadys(0) <= '1';
   
+
+    register_handler : entity work.roling_register_eth port map(
+    clk => ethClk125,
+
+    TxDataChannel =>   userTxDataChannels(0),
+    TxDataValid  =>   userTxDataValids(0),  
+    TxDataLast  =>   userTxDataLasts(0) ,
+    TxDataReady   => userTxDataReadys(0),
+    RxDataChannel =>userRxDataChannels(0),
+    RxDataValid  => userRxDataValids(0),
+    RxDataLast   => userRxDataLasts(0),
+    RxDataReady  => userRxDataReadys(0),
+
+
+    globals => globals,
+    TX_DAC_control_out => TX_DAC_control_out
+  );
   
-  U_TpGenTx : entity work.TpGenTx
-    port map (
-      -- User clock and reset
-      userClk         => ethClk125,
-      userRst         => userRst,
-      -- Configuration
-      waitCycles      => waitCyclesHigh & waitCyclesLow,
-      numWords        => x"0000" & numWords,
-      -- Connection to user logic
-      userTxData      => tpData,
-      userTxDataValid => tpDataValid,
-      userTxDataLast  => tpDataLast,
-      userTxDataReady => tpDataReady
-    );
-  
-  userTxDataChannels(1) <=  TxDataChannel ;
-  userTxDataValids(1)   <=  TxDataValid;
-  userTxDataLasts(1)    <=  TxDataLast;
-  TxDataReady           <=  userTxDataReadys(1);
-  
-  RxDataChannel        <=  userRxDataChannels(1);
-  RxDataValid          <=  userRxDataValids(1);
-  RxDataLast           <=  userRxDataLasts(1);
-  userRxDataReadys(1)   <=  RxDataReady;     
+ 
   
   
   
   u_dut  : entity work.{eth_entity}
     port map (
-      Clk       => ethClk125,
+      globals => globals,
       -- Incoming data
-      RxDataChannel => RxDataChannel,
-      rxDataValid   => RxDataValid,
-      rxDataLast    => RxDataLast,
-      rxDataReady   => RxDataReady,
+      RxDataChannel => userRxDataChannels(1),
+      rxDataValid   => userRxDataValids(1),
+      rxDataLast    => userRxDataLasts(1),
+      rxDataReady   =>  userRxDataReadys(1),
       -- outgoing data  
-      TxDataChannel   => TxDataChannel,
-      TxDataValid     => TxDataValid,
-      txDataLast      => TxDataLast,
-      TxDataReady     =>  TxDataReady
+      TxDataChannel   => userTxDataChannels(1),
+      TxDataValid     => userTxDataValids(1),
+      txDataLast      => userTxDataLasts(1) ,
+      TxDataReady     =>  userTxDataReadys(1),
+      TXBus_m2s => TXBus_m2s,
+      TXBus_s2m => TXBus_s2m
     );
+
+
+  REG_DAC : 
+  for I in 0 to 9 generate
+    SCLK(I) <= TX_DAC_control_out.SCLK;     
+    --SHOUT <= TX_DAC_control_out.
+    SIN(I)  <= TX_DAC_control_out.SIN;     
+    PCLK(I) <= TX_DAC_control_out.PCLK;
+    
+  end generate ;
+  
+  
+  
+  process(ethClk125) 
+  begin 
+    if rising_edge( ethClk125) then
+      will_clk <= not will_clk;
+    end if;
+  end process;
+
+
+  process(will_clk) 
+  begin 
+    if rising_edge( will_clk) then
+      SST_clk_proto <= not SST_clk_proto;
+    end if;
+  end process;
+
+  process(SST_clk_proto) 
+  begin 
+    if rising_edge( SST_clk_proto) then
+      SST_clk <= not SST_clk;
+    end if;
+  end process;
+
+  will_clk_gen : 
+  for I in 0 to 9 generate
+    willk_out_clk : OBUFDS
+      generic map (
+        IOSTANDARD => "LVDS_25")
+      port map (
+        O =>  WL_CLK_p(I),    -- Diff_p output (connect directly to top-level port
+        OB => WL_CLK_N(I),   -- Diff_n output (connect directly to top-level port)
+        I =>  will_clk     -- Buffer input 
+
+      );      
+  end generate ;
+  GEN_REG : 
+  for I in 0 to 9 generate
+    sst_out : OBUFDS
+      generic map (
+        IOSTANDARD => "LVDS_25")
+      port map (
+        O =>  SSTIN_P(I),    -- Diff_p output (connect directly to top-level port
+        OB => SSTIN_N(I),     -- Diff_n output (connect directly to top-level port)
+        I =>  SST_clk         -- Buffer input 
+
+      );   
+  end generate GEN_REG;
+
 
 end architecture;
 
