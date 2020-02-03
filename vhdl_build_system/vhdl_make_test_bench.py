@@ -34,8 +34,8 @@ def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
     read_entity = make_read_entity(entetyCl)
     write_entity = make_write_entity(entetyCl)
     tb_entity,test_bench = make_test_bench_for_test_cases(entetyCl)
-
-    writeFile(OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".vhd" , read_entity+write_entity+test_bench) 
+  
+    writeFile(OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".vhd" ,  read_entity+write_entity+test_bench) 
 
     sim_in_filename =  OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".csv"
     
@@ -44,6 +44,7 @@ def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
     make_sim_csv_file(entetyCl,sim_out_filename,"none",NrOfEntires=NumberOfRows)
     
     make_xml_test_case(entetyCl, OutputPath)
+
 
 
     make_stand_alone_impl( entityDef = entetyCl , path =  OutputPath, suffix= "")
@@ -55,6 +56,8 @@ def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
 def writeFile(FileName,Content):
     with open(FileName,'w',newline= "") as f:
         f.write(Content)
+
+
 
 
 
@@ -206,6 +209,18 @@ end Behavioral;
     return reader_entity_str
 
    
+def make_out_header(entityDef):
+    ports = entityDef.ports(RemoveClock = True, ExpandTypes = True)
+
+    HeaderLines=""
+    start = ""
+    for x in ports:
+            
+        HeaderLines += start + x["plainName"]
+        start="; "
+
+    return HeaderLines
+
 
 def make_write_entity(entityDef,path="."):
     
@@ -216,12 +231,8 @@ def make_write_entity(entityDef,path="."):
     ports = entityDef.ports(RemoveClock = True, ExpandTypes = True)
 
 
-    HeaderLines=""
-    start = ""
-    for x in ports:
-            
-        HeaderLines += start + x["plainName"]
-        start="; "
+    HeaderLines = make_out_header(entityDef)
+
 
     connections=""
     index = 0

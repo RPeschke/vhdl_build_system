@@ -159,7 +159,23 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
 
 
 
+def extract_header_from_top_file(Entity, FileName,BuildFolder):
+    print("=======Extracting Header From File========")
+    print(FileName)
+    dirName = os.path.dirname(FileName)
+    with open(FileName) as f:
+        Content = f.read()
+    
+    h1 = Content.split("</header>")
+    if len(h1)>1:
+        #print (h1[0].split("<header>")[1])
+        Content=h1[0].split("<header>")[1]+"\n"
+    else:
+        Content=""
 
+    with open(BuildFolder+Entity+ "/"+ Entity +"_header.txt","w",newline="") as f:
+        Content = f.write(Content)
+    print("=======Done Extracting Header From File====")
 
 
 def vhdl_make_simulation(Entity,BuildFolder = "build/",reparse=True):
@@ -171,6 +187,8 @@ def vhdl_make_simulation(Entity,BuildFolder = "build/",reparse=True):
     
     
     fileList = vhdl_get_dependencies(Entity,DataBaseFile=DataBaseFile)
+    extract_header_from_top_file(Entity, fileList[0],BuildFolder)
+
 
     vhdl_make_simulation_intern(Entity,BuildFolder)
 

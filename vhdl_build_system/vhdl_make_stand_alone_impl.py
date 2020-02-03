@@ -591,12 +591,28 @@ end architecture;
     Port = hex(Port),
     eth_entity = eth_et_name
 )
+  header = make_run_on_hardware_header(entityDef)
   with open(stand_alone_file,"w",newline="\n") as f:
-    f.write(eth_body + body)
+    f.write("-- <header>"+header+ "</header>\n\n"+eth_body + body)
 
   return eth_et_name
 
 
+def make_run_on_hardware_header(entityDef):
+    header="Header; Nr_of_streams; recording TimeStamp; Operation; Number of packets; packateNr; Sending TimeStamp; "
+    header += make_out_header(entityDef)
+    header += "; Tail"
+    return header
 
 
+def make_out_header(entityDef):
+    ports = entityDef.ports(RemoveClock = True, ExpandTypes = True)
 
+    HeaderLines=""
+    start = ""
+    for x in ports:
+            
+        HeaderLines += start + x["plainName"]
+        start="; "
+
+    return HeaderLines
