@@ -16,7 +16,7 @@ from  .vhdl_make_test_bench_names import *
 
 from  .vhdl_entity2FileName       import *
 from  .vhdl_entity_class          import *
-
+from  .vhdl_merge_split_test_cases import *
 
 def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
       
@@ -28,12 +28,15 @@ def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
     
     ParsedFile = vhdl_parser.vhdl_parser(InputFile)
 
-    make_package_file(entetyCl,"none","write",ParsedFile["packageUSE"], OutputPath)
-    make_package_file(entetyCl,"out","read",ParsedFile["packageUSE"], OutputPath)
+    make_package_file(entetyCl, ParsedFile["packageUSE"], OutputPath)
+    
 
-    make_read_entity(entetyCl,OutputPath)
-    make_write_entity(entetyCl,OutputPath)
-    tb_entity = make_test_bench_for_test_cases(entetyCl, OutputPath)
+    read_entity = make_read_entity(entetyCl)
+    write_entity = make_write_entity(entetyCl)
+    tb_entity,test_bench = make_test_bench_for_test_cases(entetyCl)
+
+    writeFile(OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".vhd" , read_entity+write_entity+test_bench) 
+
     sim_in_filename =  OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".csv"
     
     make_sim_csv_file(entetyCl,sim_in_filename,"out",NrOfEntires=NumberOfRows)
@@ -41,6 +44,8 @@ def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
     make_sim_csv_file(entetyCl,sim_out_filename,"none",NrOfEntires=NumberOfRows)
     
     make_xml_test_case(entetyCl, OutputPath)
+
+
     make_stand_alone_impl( entityDef = entetyCl , path =  OutputPath, suffix= "")
 
     print("generated test bench file", tb_entity)
@@ -53,23 +58,11 @@ def writeFile(FileName,Content):
 
 
 
-
-
-
-def make_package_file(entityDef,inOutFilter,suffix,PackagesUsed,path="."):
-    et_name = entityDef.name()
-    write_pgk_file = path+"/"+et_name +"_" + suffix +"_pgk.vhd"
-    
-    if suffix == "write":
-        write_pgk = get_writer_pgk_name(entityDef)
-        write_record = get_writer_record_name(entityDef)
+def make_IO_record(entityDef,inOutFilter):
+    if inOutFilter == "none":
+        IO_record_name = get_writer_record_name(entityDef)
     else :
-        write_pgk = get_reader_pgk_name(entityDef)
-        write_record =get_reader_record_name(entityDef)
-    
-    userPackages = ""
-    for package in PackagesUsed:
-            userPackages += "use work." + package + ".all;\n"
+        IO_record_name =get_reader_record_name(entityDef)
     
     ports = entityDef.ports(Filter= lambda a : a["InOut"] != inOutFilter, RemoveClock = True)
 
@@ -80,6 +73,38 @@ def make_package_file(entityDef,inOutFilter,suffix,PackagesUsed,path="."):
         RecordMember += "    " + x["name"] + " : "+ x["type"] +  ";  \n"
         defaultsstr += start + x["name"] + " => "+  x["default"]
         start = ",\n    "
+
+    IO_record = '''
+  type {IO_record_name} is record
+{RecordMember}
+  end record;
+
+  constant {IO_record_name}_null : {IO_record_name} := ( 
+{defaultsstr}
+  );
+    '''.format(
+        IO_record_name=IO_record_name,
+        RecordMember=RecordMember,
+        defaultsstr=defaultsstr
+    )
+    return IO_record
+
+def make_package_file(entityDef,PackagesUsed,path="."):
+    et_name = entityDef.name()
+    write_pgk_file = path+"/"+et_name +"_IO_pgk.vhd"
+    
+   
+    write_pgk = get_IO_pgk_name(entityDef)
+    
+    
+    userPackages = ""
+    for package in PackagesUsed:
+            userPackages += "use work." + package + ".all;\n"
+    
+    records =""
+    records += make_IO_record(entityDef,"none")
+    records +="\n\n"
+    records += make_IO_record(entityDef,"read")
 
     write_pgk_str = '''
 library IEEE;
@@ -95,14 +120,7 @@ use work.CSV_UtilityPkg.all;
 
 package {write_pgk} is
 
-  type {write_record} is record
-{RecordMember}
-  end record;
-
-  constant {write_record}_null : {write_record} := ( 
-{defaultsstr}
-  );
-
+{records}
 end {write_pgk};
 
 package body {write_pgk} is
@@ -112,9 +130,7 @@ end package body {write_pgk};
     '''.format(
         userPackages=userPackages,
         write_pgk=write_pgk,
-        write_record=write_record,
-        RecordMember=RecordMember,
-        defaultsstr=defaultsstr
+        records=records
     )
 
     writeFile(write_pgk_file,write_pgk_str)
@@ -125,13 +141,10 @@ end package body {write_pgk};
 
 
 
-def make_read_entity(entityDef,path="."):
-    suffix = "reader"
-    inOut = "out"
+def make_read_entity(entityDef):
     et_name = entityDef.name()
-    reader_entity_file = path+"/"+et_name +"_" + suffix +"_entity.vhd"
     reader_entity = get_reader_entity_name(entityDef)
-    reader_pgk = get_reader_pgk_name(entityDef)
+    reader_pgk = get_IO_pgk_name(entityDef)
     
     ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock = True, ExpandTypes = True)
     
@@ -178,6 +191,7 @@ begin
 {connections}
 
 end Behavioral;
+---------------------------------------------------------------------------------------------------
     '''.format(
     et_name=et_name,
     includes=get_includes(),
@@ -189,18 +203,15 @@ end Behavioral;
     )
     
 
-    writeFile(reader_entity_file, reader_entity_str)
+    return reader_entity_str
 
    
 
 def make_write_entity(entityDef,path="."):
-    inOut = "in"
-    suffix = "writer"
     
     et_name = entityDef.name()
-    write_entity_file = path+"/"+et_name +"_" + suffix +"_entity.vhd"
     write_entity = get_writer_entity_name(entityDef)
-    write_pgk = get_writer_pgk_name(entityDef)
+    write_pgk = get_IO_pgk_name(entityDef)
 
     ports = entityDef.ports(RemoveClock = True, ExpandTypes = True)
 
@@ -252,6 +263,7 @@ begin
 {connections}
 
 end Behavioral;
+---------------------------------------------------------------------------------------------------
     '''.format(
         et_name=et_name,
         includes=get_includes(),
@@ -263,7 +275,7 @@ end Behavioral;
         NUM_COL=str(len(ports))
     )
 
-    writeFile(write_entity_file, writer_entity_str)
+    return writer_entity_str
     
 
         
@@ -275,31 +287,42 @@ def get_test_bench_file_basename(entityDef):
     return tb_entity
 
 
-def make_test_bench_for_test_cases(entityDef,path="."):
+def make_test_bench_for_test_cases(entityDef):
     et_name = entityDef.name()
-    tb_entity_file = path+"/"+et_name +"_tb_csv.vhd"
+
     tb_entity = get_test_bench_file_basename(entityDef)
-    write_pgk = get_writer_pgk_name(entityDef)
-    reader_pgk = get_reader_pgk_name(entityDef)
+    write_pgk = get_IO_pgk_name(entityDef)
+
 
     ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock = True)
  
     input2OutputConnection = ""
+    if entityDef.IsUsingGlobals():
+        input2OutputConnection ="""  data_out.globals.clk <=clk;
+  data_out.globals.reg <= data_in.globals.reg;
+  data_out.globals.rst <= data_in.globals.rst;
+  """
+    ports = [x for x in ports if x["type"] != "globals_t"]
     for x in ports:
         input2OutputConnection +=  'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
 
     
     ports = entityDef.ports(RemoveClock = True)
-    portsstr =""
-    start ="  "
+    
+    portsstr = ""
+    start =""
+    if not entityDef.IsUsingGlobals():
+        start = "\n  clk => clk"
+
     for x in ports:
         portsstr += start + x["name"] +" => data_out." + x["name"] 
-        start = ",\n  "
+        start = ",\n  " 
+        
 
     testBenchStr = '''
 {includes}
 use work.{write_pgk}.all;
-use work.{reader_pgk}.all;
+
 entity {tb_entity} is 
 end entity;
 
@@ -330,15 +353,14 @@ begin
 {input2OutputConnection}
 
 DUT :  entity work.{et_name}  port map(
-    clk => clk,
-    {ports}
+{ports}
     );
 
 end behavior;
+---------------------------------------------------------------------------------------------------
     '''.format(
   includes=get_includes(),
   write_pgk=write_pgk,
-  reader_pgk=reader_pgk,
   tb_entity=tb_entity,
   et_name=et_name,
   readerRecordName=get_reader_record_name(entityDef),
@@ -349,9 +371,9 @@ end behavior;
   ports=portsstr
     )
 
-    writeFile(tb_entity_file, testBenchStr)
 
-    return tb_entity
+
+    return tb_entity,testBenchStr
 
 
 
@@ -399,8 +421,7 @@ def make_sim_csv_file(entityDef,FileName,FilterOut,NrOfEntires=1000):
 def make_xml_test_case(entityDef,path):
     et_name = get_test_bench_file_basename(entityDef)
     testCaseName = path+"/"+get_test_bench_file_basename(entityDef)+".testcase.xml"
-    testCaseXml='''
-<?xml version="1.0"?>
+    testCaseXml='''<?xml version="1.0"?>
 <testcases>
     <testcase name="{et_name}empty_test01">
         <descitption> autogenerated empty test case</descitption>
@@ -413,6 +434,8 @@ def make_xml_test_case(entityDef,path):
             <Headers></Headers>
             <Lines></Lines>
         </RegionOfInterest>
+        <Stimulus/>
+        <Reference/>
     </testcase>
 </testcases>
     '''.format(
@@ -423,6 +446,9 @@ def make_xml_test_case(entityDef,path):
     )
 
     writeFile(testCaseName, testCaseXml)
+    merge_test_case(testCaseName)
+
+  
 
 
 

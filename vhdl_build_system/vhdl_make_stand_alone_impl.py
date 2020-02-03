@@ -13,6 +13,7 @@ from  .vhdl_make_test_bench_names                 import *
 
 def make_stand_alone_entity_get_DUT(entityDef):
   ports = entityDef.ports(RemoveClock=True)
+  ports = [x for x in ports if x["type"] != "globals_t"]
   et_name = entityDef.name()
   clock_connect = "clk => globals.clk"
   if entityDef.IsUsingGlobals():
@@ -53,11 +54,11 @@ def make_stand_alone_entity_get_data_in_converter(entityDef):
   return data_in_converter, len(ports_ex_input)
 
 
-def make_stand_alone_entity(entityDef , suffix,path):
-  et_name = entityDef.name()
-  et_name_eth = et_name+"_eth"  
+def make_stand_alone_entity(entityDef):
 
-  stand_alone_file = path+"/"+et_name +"_" + suffix +"_eth.vhd"
+  et_name_eth = entityDef.name()+"_eth"  
+
+
 
   
   ports = entityDef.ports(RemoveClock=True)
@@ -82,10 +83,11 @@ library UNISIM;
   use work.UtilityPkg.all;
 
   use work.{write_pgk}.all;
-  use work.{reader_pgk}.all;
   use work.type_conversions_pgk.all;
   use work.Imp_test_bench_pgk.all;
-  
+  use work.xgen_klm_scrod_bus.all;
+  use work.klm_scint_globals.all;
+
 entity {EntityName} is
   port (
     globals :  in globals_t := globals_t_null;
@@ -111,7 +113,7 @@ architecture rtl of {EntityName} is
 
   -- User Data interfaces
 
-  signal clk : in std_logic;
+  signal clk : std_logic := '0';
 
   signal  i_TxDataChannels :  DWORD := (others => '0');
   signal  i_TxDataValids   :  sl := '0';
@@ -213,8 +215,7 @@ end architecture;
     inputChannels = ports_ex_input_len,
     outputChannel = ports_ex_output_len,
  
-    write_pgk = get_writer_pgk_name(entityDef),
-    reader_pgk =  get_reader_pgk_name(entityDef),
+    write_pgk = get_IO_pgk_name(entityDef),
     reader_record = get_reader_record_name(entityDef),
     writer_record = get_writer_record_name(entityDef),
     DUT = dut,
@@ -223,9 +224,8 @@ end architecture;
     connect_input_output = connect_input_output,
     FIFO_DEPTH = 10
 )
-  with open(stand_alone_file,"w",newline="\n") as f:
-    f.write(body)
-  return et_name_eth
+
+  return et_name_eth, body
 
 
 
@@ -233,7 +233,7 @@ end architecture;
 
 def make_stand_alone_impl(entityDef, suffix, ipAddr = '192.168.1.33', Port=2001, path="."):
   
-  eth_et_name = make_stand_alone_entity(entityDef,suffix,path)
+  eth_et_name, eth_body = make_stand_alone_entity(entityDef)
   et_name = entityDef.name()
   et_name_top = et_name+"_top"
   stand_alone_file = path+"/"+et_name +"_" + suffix +"_top.vhd"
@@ -258,6 +258,14 @@ library UNISIM;
 
   use work.type_conversions_pgk.all;
   use work.Imp_test_bench_pgk.all;
+  
+  use work.UtilityPkg.all;
+  use work.Eth1000BaseXPkg.all;
+  use work.GigabitEthPkg.all;
+  use work.xgen_klm_scrod_bus.all;
+  use work.klm_scint_globals.all;
+  use work.tdc_pkg.all;
+
   
 entity {EntityName} is
    port (
@@ -316,7 +324,7 @@ entity {EntityName} is
    BUSB_DIN_DAC		       : out std_logic := '0';
    --
    -- TRIGGER SIGNALS
-   TARGET_TB                : in tb_vec_type;
+   -- TARGET_TB                : in tb_vec_type;
    
    TDC_DONE                 : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ; -- move to readout signals
    TDC_MON_TIMING           : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ;  -- add the ref to the programming of the TX chip
@@ -574,6 +582,7 @@ begin
 end architecture;
 
 """.format(
+    
     EntityName=et_name_top,
     ip3 = ip[0:2].decode("utf-8"),
     ip2 = ip[2:4].decode("utf-8"),
@@ -583,7 +592,10 @@ end architecture;
     eth_entity = eth_et_name
 )
   with open(stand_alone_file,"w",newline="\n") as f:
-    f.write(body)
+    f.write(eth_body + body)
+
+  return eth_et_name
+
 
 
 

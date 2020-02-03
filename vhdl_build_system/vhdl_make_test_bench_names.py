@@ -21,6 +21,12 @@ def get_writer_pgk_name(entityDef):
 
     pgk_name = et_name +"_writer_pgk"
     return pgk_name
+    
+def get_IO_pgk_name(entityDef):
+    et_name = entityDef.name()
+
+    pgk_name = et_name +"_IO_pgk"
+    return pgk_name
 
 def get_reader_record_name(entityDef):
     et_name = entityDef.name()

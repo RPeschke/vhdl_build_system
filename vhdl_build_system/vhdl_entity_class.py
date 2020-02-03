@@ -99,7 +99,7 @@ def set_short_hand(portdef):
 
 def remove_clock_from_ports(ports):
     ports = [x for x in ports if x["name"] != "clk"]
-    ports = [x for x in ports if x["type"] != "globals_t"]
+    #ports = [x for x in ports if x["type"] != "globals_t"]
     return ports
 
 def port_to_plain_text(ports):
