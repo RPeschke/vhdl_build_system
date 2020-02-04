@@ -26,6 +26,7 @@ parser.add_argument('--remotePath', help='Path on the remote machine that has th
 parser.add_argument('--protoBuild', help='Path to the proto build files', default="protoBuild/")
 parser.add_argument('--RunPcSsh', help='ssh configuration used for running the firmware on actual Hardware', default="labpc")
 parser.add_argument('--RunPcRemote', help='Path on the remote running PC', default="/home/belle2/Documents/tmp/")
+parser.add_argument('--jtag_PC', help='Path on the remote jtag PC', default="lab_xilinx")
 
 args = parser.parse_args()
 
@@ -226,30 +227,104 @@ run_on_hardware = '''#/bin/bash
 #$5 Port
 
 
+
 if [ "$3" != "" ]; then
     rm -f  $3
 fi
 
 if [ "$2" != "" ]; then
-    cp -f  $2 {buildpath}/$1/$1.csv
+    python3 vhdl_build_system/excel_to_csv.py --OutputCSV  {buildpath}/$1/$1.csv  --InputXLS $2 
 fi
+
+IpAddress="192.168.1.20"
+if [ "$4" != "" ]; then
+    IpAddress="$4"
+fi
+
+port="2000"
+if [ "$5" != "" ]; then
+    port="$5"
+fi
+
 
 scp firmware-ethernet/scripts/udp_run.py {RunPcSsh}:{RunPcRemote}/
 
 scp {buildpath}/$1/$1.csv {RunPcSsh}:{RunPcRemote}/
 
-ssh {RunPcSsh} "cd {RunPcRemote}/ && ./udp_run.py --InputFile $1.csv --OutputFile $1_out.csv --IpAddress $4  --port $5"
 
-scp  {RunPcSsh}:{RunPcRemote}/$1_out.csv  {buildpath}/$1/
+
+echo  "cd {RunPcRemote}/ && ./udp_run.py --InputFile $1.csv --OutputFile $1_out_HW.csv --IpAddress $IpAddress --port $port --OutputHeader $1_header.txt"
+ssh {RunPcSsh} "cd {RunPcRemote}/ && ./udp_run.py --InputFile $1.csv --OutputFile $1_out_HW.csv --IpAddress $IpAddress --port $port --OutputHeader $1_header.txt"
+
+
+scp  {RunPcSsh}:{RunPcRemote}/$1_out_HW.csv  {buildpath}/$1/
+
+
+
+
 
 if [ "$3" != "" ]; then
-    cp -f {buildpath}/$1/$1_out.csv $3
+    cp -f {buildpath}/$1/$1_out_HW.csv $3
 fi
+
+
+FolderName=$(cat "currentFolder.txt")
+echo $FolderName
+ssh {RunPcSsh} "cd  {RunPcRemote}/ && cp  $1.csv  $FolderName/$(date '+%Y-%m-{ampersand}d-%H-%M')_$1.csv  && cp  $1_out_HW.csv $FolderName/$(date '+%Y-%m-{ampersand}d-%H-%M')_$1_out_HW.csv"
+
     '''.format(
         buildpath=args.path,
         RunPcRemote=args.RunPcRemote,
-        RunPcSsh=args.RunPcSsh
-    
+        RunPcSsh=args.RunPcSsh,
+        ampersand="%"
         )
 
 make_bash_file("run_on_hardware.sh",run_on_hardware)
+
+jtag= """#/bin/bash
+#$1 entity Name
+
+echo " {buildpath}/$1/$1.bit"
+ls  {buildpath}/$1/$1.bit
+scp  {buildpath}/$1/$1.bit lab_xilinx:/home/ise//
+
+echo "setMode -bscan" > commad.cmd
+echo "setCable -port auto" >> commad.cmd
+echo "Identify -inferir"  >> commad.cmd
+echo "identifyMPM"  >> commad.cmd
+echo "assignFile -p 1 -file \"$1.bit\""  >> commad.cmd
+echo "Program -p 1" >> commad.cmd
+echo "quit"  >> commad.cmd
+
+scp commad.cmd {jtag_PC}:/home/ise//
+ssh {jtag_PC} "impact -batch commad.cmd"
+rm commad.cmd
+
+FolderName=$(cat "nextRunFolder.txt")
+newFolder="{RunPcRemote}/$FolderName"
+
+ssh {RunPcSsh} "mkdir $newFolder"
+ssh {RunPcSsh} "echo start > $newFolder/$(date '+%Y-%m-{ampersand}d-%H-%M')_start.txt"
+scp {buildpath}/$1/$1.bit "{RunPcSsh}:$newFolder"
+ssh {RunPcSsh} "mv $newFolder/$1.bit $newFolder/$(date '+%Y-%m-{ampersand}d-%H-%M')_$1.bit"
+scp "{buildpath}/$1/$1_header.txt" "{RunPcSsh}:{RunPcRemote}/"
+echo  $FolderName > currentFolder.txt
+""".format(
+        buildpath=args.path,
+        RunPcRemote=args.RunPcRemote,
+        RunPcSsh=args.RunPcSsh,
+        ampersand="%",
+        jtag_PC=args.jtag_PC
+        )
+
+make_bash_file("jtag.sh",jtag)
+
+
+startNewRun='''runNr="RUN_$(date '+%Y-%m-{ampersand}d-%H-%M')"
+echo $runNr > nextRunFolder.txt
+git add *
+git commit -m "$runNr"
+'''.format(ampersand="%")
+
+
+make_bash_file("startNewRun.sh",startNewRun)
