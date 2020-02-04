@@ -35,7 +35,7 @@ from  vhdl_build_system.vhdl_build_system.vhdl_run_test_case import *
 def main():
     parser = argparse.ArgumentParser(description='Runs Test Cases')
     parser.add_argument('--path', help='Path to where the build system is located',default="build/")
-    parser.add_argument('--test', help='specifies a specific cases to run. if not set it will run all test cases',default="klm_scint/tests/tb_fifo_cc_axi/axiStreamFIFO_1.testcase.xml")
+    parser.add_argument('--test', help='specifies a specific cases to run. if not set it will run all test cases',default="")
     parser.add_argument('--update', help='Update the reference output file. use --update true to update a test case.',default = "False")
 
     args = parser.parse_args()

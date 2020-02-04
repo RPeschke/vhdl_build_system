@@ -22,6 +22,8 @@ from matplotlib.pyplot import figure
 
 from  .vhdl_make_simulation import *
 from  .vhdl_test_cases_report_gen import *
+from  .vhdl_merge_split_test_cases import *
+
 
 def plot_dataset_pcolor(df,FileName):
     Values = df.values
@@ -107,7 +109,7 @@ def make_description(xNode,buildFolder):
         dfOut=dfOut.join(df_ref,rsuffix='_ref')
      
         plot_dataset_pcolor(dfOut,buildFolder + entity +"/"+ name+".png")
-        ret+= "![Drag Racing]("+entity +"/"+ name+".png"+")\n\n"
+        ret+= "![OutputSignals]("+entity +"/"+ name+".png"+")\n\n"
         #ret+= tabulate(dfOut, headers="keys", tablefmt="github") +"\n\n"
     except :
         ret += "\n error while running the test\n "
@@ -144,7 +146,7 @@ def size_of_file(FileName):
 def read_testcase_file(FileName,testResults,making_build_system = True,build_systems = list(),buildFolder = "build/", reparse = True,update_reference_file=False):
     tree = ET.parse(FileName)
     root = tree.getroot()
-    
+    split_test_case(FileName)
     filePath = os.path.dirname(FileName)
  
     print(root)
@@ -200,6 +202,7 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
         ret["TestType"] =  xml_find_or_defult(child,"tc_type","TestCase")
         testResults.append(ret)
 
+    merge_test_case(FileName)
     return  reparse
 
 
