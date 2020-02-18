@@ -107,7 +107,7 @@ def make_package_file(entityDef,PackagesUsed,path="."):
     records =""
     records += make_IO_record(entityDef,"none")
     records +="\n\n"
-    records += make_IO_record(entityDef,"read")
+    records += make_IO_record(entityDef,"out")
 
     write_pgk_str = '''
 library IEEE;
@@ -323,7 +323,7 @@ def make_test_bench_for_test_cases(entityDef):
     portsstr = ""
     start =""
     if not entityDef.IsUsingGlobals():
-        start = "\n  clk => clk"
+        start = "\n  clk => clk,\n  "
 
     for x in ports:
         portsstr += start + x["name"] +" => data_out." + x["name"] 
