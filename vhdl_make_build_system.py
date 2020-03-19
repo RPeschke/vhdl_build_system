@@ -109,9 +109,9 @@ make_bash_file("make_implementation.sh",make_implementation)
 
 line = ""
 if args.ssh == sshNotSet:
-    line = './'+ args.path + '/$1/run.sh $2 $3\n'
+    line = './'+ args.path + '/$1/run.sh $2.csv $3\n'
 else :
-    line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +' && ./'+ args.path + '/$1/run.sh $2 $3"\n'
+    line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +' && ./'+ args.path + '/$1/run.sh $2.csv $3"\n'
 
 run_simulation='''#/bin/bash
 echo "running $1"
