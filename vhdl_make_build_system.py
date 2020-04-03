@@ -172,6 +172,7 @@ make_bash_file("update_test_cases.sh",update_test_cases)
 make_test_bench = '''#/bin/bash
 echo "make test bench for \'$1\' in Folder \'$2\' "
 
+mkdir $2
 
 python3 {vhdl_build_system}/bin_make_test_bench.py  --EntityName $1 --OutputPath $2
 '''.format(
@@ -246,7 +247,7 @@ if [ "$5" != "" ]; then
     port="$5"
 fi
 
-
+dos2unix firmware-ethernet/scripts/udp_run.py
 scp firmware-ethernet/scripts/udp_run.py {RunPcSsh}:{RunPcRemote}/
 
 scp {buildpath}/$1/$1.csv {RunPcSsh}:{RunPcRemote}/
