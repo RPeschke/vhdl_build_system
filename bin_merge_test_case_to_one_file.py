@@ -11,8 +11,8 @@ from vhdl_build_system.vhdl_build_system.vhdl_merge_split_test_cases import *
 def main():
     print("sdasd")
     parser = argparse.ArgumentParser(description='Creates Test benches for a given entity')
-    parser.add_argument('--InputTestCase', help='Path to the Test Case File',default="TargetX/tests/TXWaveFormReadout/txwaveformreadout_tb_csv.testcase.xml")
-    parser.add_argument('--ExcelFile', help='Path to the input Excel File',default="TargetX/tests/TXWaveFormReadout/empty_testbench.xlsm")
+    parser.add_argument('--InputTestCase', help='Path to the Test Case File',default="session_01/test_derivative/Sin_wave_test.testcase.xml")
+    parser.add_argument('--ExcelFile', help='Path to the input Excel File',default="session_01/test_derivative/test_derivative_withGlobals.xlsm")
     #parser.add_argument('--ReferenceCSV', help='path to the reference csv File',default="1000")
 
     args = parser.parse_args()
