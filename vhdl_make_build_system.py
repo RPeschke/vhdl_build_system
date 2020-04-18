@@ -27,6 +27,7 @@ parser.add_argument('--protoBuild', help='Path to the proto build files', defaul
 parser.add_argument('--RunPcSsh', help='ssh configuration used for running the firmware on actual Hardware', default="labpc")
 parser.add_argument('--RunPcRemote', help='Path on the remote running PC', default="/home/belle2/Documents/tmp/")
 parser.add_argument('--jtag_PC', help='Path on the remote jtag PC', default="lab_xilinx")
+parser.add_argument('--sym', help='Which simulator to use  (ISE/vivado)', default="ISE")
 
 args = parser.parse_args()
 
@@ -51,6 +52,8 @@ build_local.text = os.getcwd()
 makeise = ET.SubElement(local, 'makeise')
 makeise_ = "makeise/"
 makeise.text = makeise_
+
+
 
 protoBuild = ET.SubElement(local, 'protoBuild')
 protoBuild_ =args.protoBuild
@@ -107,11 +110,14 @@ make_bash_file("make_implementation.sh",make_implementation)
 ########################################################################
 #   run_simulation
 
+run_command = "run.sh"
+if args.sym == "vivado":
+    run_command = "vivado_run.sh"
 line = ""
 if args.ssh == sshNotSet:
-    line = './'+ args.path + '/$1/run.sh $2.csv $3\n'
+    line = './'+ args.path + '/$1/'+run_command+' $2.csv $3\n'
 else :
-    line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +' && ./'+ args.path + '/$1/run.sh $2.csv $3"\n'
+    line = 'ssh ' + args.ssh +' "cd ' + args.remotePath +' && ./'+ args.path + '/$1/'+run_command+' $2.csv $3"\n'
 
 run_simulation='''#/bin/bash
 echo "running $1"

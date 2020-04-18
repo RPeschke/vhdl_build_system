@@ -119,7 +119,8 @@ def make_run_build_scripts(FileName,build=False,run=False,with_gui=False,entity=
 
     os.system("chmod +x "+FileName) 
 
-
+def make_vivado_build_run_script(entity, BuildFolder = "build/"):
+    pass
 
 def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):  
     OutputPath = BuildFolder + entity + "/"

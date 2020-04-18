@@ -14,7 +14,7 @@ def main():
     if len(sys.argv) > 1:
         Entity = sys.argv[1]
     else:
-        Entity= "txwaveformreadout_tb_csv"
+        Entity= "derivative_top"
 
     print('Entity: ' , Entity)
     try_make_dir("./backup/xgen")
