@@ -48,7 +48,8 @@ def merge_test_case_excel(InputTestCase,ExcelFile):
     Convert2CSV(ExcelFile,"Simulation_output", dirName+ "/"  + root[0].find('referencefile').text)
     
     
-    merge_test_case(InputTestCase,True)
+    #merge_test_case(InputTestCase,True)
+    merge_test_case(InputTestCase)
 
 def split_test_case(InputTestCase):
     tree = ET.parse(InputTestCase)

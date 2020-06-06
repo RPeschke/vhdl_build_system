@@ -143,6 +143,22 @@ def size_of_file(FileName):
         return len(fcont)
         #return  f.tell()
 
+def remove_white_spaces(FileName):
+    with open(FileName) as f:
+        content = f.read()
+    
+    content = content.replace(" ps ", "")
+    content = content.replace(" ", "")
+    content = content.split("\n")
+    content = content[0:990]
+    content = "\n".join(content)
+    with open(FileName, "w") as f:
+        f.write(content)
+
+
+
+
+
 def read_testcase_file(FileName,testResults,making_build_system = True,build_systems = list(),buildFolder = "build/", reparse = True,update_reference_file=False):
     tree = ET.parse(FileName)
     root = tree.getroot()
@@ -177,6 +193,9 @@ def read_testcase_file(FileName,testResults,making_build_system = True,build_sys
         print("executing run command: " + run_command)
         x= os.system(run_command)
         Display_and_run_command(postRunScript,"postRunScript: ", name +"_postRunScript.txt",entity_folder)
+
+        remove_white_spaces(tempoutfile)
+        remove_white_spaces(referencefile)
 
         diff_tool = xml_find_or_defult(child,"difftool","diff")
 
