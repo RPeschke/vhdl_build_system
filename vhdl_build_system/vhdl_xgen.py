@@ -17,6 +17,7 @@ def make_xgen(scriptName,PackageName,path="build/"):
         os.system(line)
 
 def get_xgen_file(packageName):
+    print(packageName)
     scriptName = packageName.split("_")[1]
     flist = getListOfFiles(".", "*/" + scriptName + ".py")
     if len(flist) == 0:
