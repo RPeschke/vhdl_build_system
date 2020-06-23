@@ -67,7 +67,7 @@ def make_IO_record(entityDef,inOutFilter):
     else :
         IO_record_name =get_reader_record_name(entityDef)
     
-    ports = entityDef.ports(Filter= lambda a : a["InOut"] != inOutFilter, RemoveClock = True)
+    ports = entityDef.ports(Filter= lambda a : a["InOut"] != inOutFilter)
 
     RecordMember = ""
     defaultsstr = ""
@@ -149,7 +149,7 @@ def make_read_entity(entityDef):
     reader_entity = get_reader_entity_name(entityDef)
     reader_pgk = get_IO_pgk_name(entityDef)
     
-    ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock = True, ExpandTypes = True)
+    ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in",  ExpandTypes = True)
     
     connections=""
     index = 0
@@ -210,7 +210,7 @@ end Behavioral;
 
    
 def make_out_header(entityDef):
-    ports = entityDef.ports(RemoveClock = True, ExpandTypes = True)
+    ports = entityDef.ports( ExpandTypes = True)
 
     HeaderLines=""
     start = ""
@@ -228,7 +228,7 @@ def make_write_entity(entityDef,path="."):
     write_entity = get_writer_entity_name(entityDef)
     write_pgk = get_IO_pgk_name(entityDef)
 
-    ports = entityDef.ports(RemoveClock = True, ExpandTypes = True)
+    ports = entityDef.ports(ExpandTypes = True)
 
 
     HeaderLines = make_out_header(entityDef)
@@ -306,13 +306,15 @@ def make_test_bench_for_test_cases(entityDef):
 
 
     ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock = True)
- 
+    clk_port = entityDef.get_clock_port()
     input2OutputConnection = ""
     if entityDef.IsUsingGlobals():
-        input2OutputConnection ="""  data_out.globals.clk <=clk;
-  data_out.globals.reg <= data_in.globals.reg;
-  data_out.globals.rst <= data_in.globals.rst;
-  """
+        input2OutputConnection ="""  data_out.{globals}.clk <=clk;
+  data_out.{globals}.reg <= data_in.{globals}.reg;
+  data_out.{globals}.rst <= data_in.{globals}.rst;
+  """.format(
+      globals = clk_port["name"]
+  )
     ports = [x for x in ports if x["type"] != "globals_t"]
     for x in ports:
         input2OutputConnection +=  'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
@@ -324,6 +326,8 @@ def make_test_bench_for_test_cases(entityDef):
     start =""
     if not entityDef.IsUsingGlobals():
         start = "\n  clk => clk,\n  "
+    else:
+        start = "\n  " + clk_port["name"] + " => data_out."+ clk_port["name"] +",\n  "
 
     for x in ports:
         portsstr += start + x["name"] +" => data_out." + x["name"] 
@@ -392,7 +396,7 @@ end behavior;
 def make_sim_csv_file(entityDef,FileName,FilterOut,NrOfEntires=1000):
     et_name = entityDef.name()
        
-    ports = entityDef.ports(Filter= lambda a : a["InOut"] != FilterOut, RemoveClock = True,ExpandTypes =True)
+    ports = entityDef.ports(Filter= lambda a : a["InOut"] != FilterOut, ExpandTypes =True)
     
     if FilterOut == "out":
         delimiter=", "

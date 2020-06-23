@@ -32,7 +32,7 @@ def vhdl_get_dependencies_internal(Entity,DataBaseFile="build/DependencyBD"):
     TB_entity = Entity
     eneties_used ={}
   
-    eneties_used[TB_entity] = find_entity(d,TB_entity)
+    eneties_used[TB_entity] = find_entity(d,TB_entity,".")
 
     old_length = 0
     new_length = 1
@@ -76,14 +76,22 @@ def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyB
 
 
 
-def find_entity(d,Entity):
+def find_entity(d,Entity, currentFileName="."):
     for k in d.keys():
+        if not isSubPath(currentFileName, k):
+            continue
         for e in d[k]['entityDef']:
             
             if e.lower() == Entity.lower():
                 return d[k]['FileName']
 
+
+
+    currentFileName = currentFileName[:currentFileName.rfind("/")]
+    if currentFileName:
+        return find_entity(d,Entity, currentFileName)
     raise Exception("unable to find Entity " +Entity)
+
 
 def find_used_entities(d,FileName):
     ret = list()
@@ -98,13 +106,23 @@ def find_used_entities(d,FileName):
     return ret
 
 
-def find_component(d,component):
+def find_component(d,component, currentFileName="."):
+
     for k in d.keys():
+        if not isSubPath(currentFileName, k):
+            continue
         for e in d[k]['entityDef']:
             if e.lower() == component.lower():
                 return d[k]['FileName']
 
-    print("unable to find component " +component)
+    
+
+    currentFileName = currentFileName[:currentFileName.rfind("/")]
+    if currentFileName:
+        return find_component(d,component, currentFileName)
+
+
+    raise Exception("unable to find component  " +component)
 
 def find_used_components(d,FileName):
     ret = list()
@@ -117,24 +135,29 @@ def find_used_components(d,FileName):
 
     return ret
 
+def isSubPath(sub, main):
+    sub = sub[:sub.rfind("/")]
 
+    return  main.startswith(sub)
 
-def find_PacketDef(d,Entity):
+def find_PacketDef(d,Entity, currentFileName="."):
     #print(Entity)
     for k in d.keys():
+        if not isSubPath(currentFileName, k):
+            continue
+
         for e in d[k]['packageDef']:
             if e.lower() == Entity.lower():
                 #print(Entity , d[k]['FileName'])
                 return d[k]['FileName']
+    
+    currentFileName = currentFileName[:currentFileName.rfind("/")]
+    if currentFileName:
+        return find_PacketDef(d,Entity, currentFileName)
 
-    xgen_fileObj = vhdl_xgen_make_package(Entity)
-    if xgen_fileObj == None:
-        raise Exception("unable to find package " +Entity)
+    raise Exception("unable to find package " +Entity)
 
 
-    d[xgen_fileObj["FileName"]] = xgen_fileObj
-
-    return xgen_fileObj["FileName"]
 
 
 def find_used_package(d,FileName):
@@ -156,10 +179,11 @@ def make_depency_list(d, eneties_used, find_used_func,find_def_func):
         new_EntitesUsed = eneties_used.copy()
         for k in eneties_used:
         
-            entites_in_file = find_used_func(d,new_EntitesUsed[k])
+            currentFileName = new_EntitesUsed[k]
+            entites_in_file = find_used_func(d,currentFileName)
             
             for e in entites_in_file:
-                FileName = find_def_func(d,e)
+                FileName = find_def_func(d,e,currentFileName)
                 
                 if FileName and ".xco" not in FileName:
                     new_EntitesUsed[e] = FileName

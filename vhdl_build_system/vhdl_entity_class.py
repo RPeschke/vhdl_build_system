@@ -99,7 +99,8 @@ def set_short_hand(portdef):
 
 def remove_clock_from_ports(ports):
     ports = [x for x in ports if x["name"] != "clk"]
-    #ports = [x for x in ports if x["type"] != "globals_t"]
+    ports = [x for x in ports if x["type"] != "globals_t"]
+    ports = [x for x in ports if x["type"] != "system_globals"]
     return ports
 
 def port_to_plain_text(ports):
@@ -158,15 +159,22 @@ class vhdl_entity:
     
     def IsUsingGlobals(self):
         ports = self.ports()
-        ports = [x for x in ports if x["type"] == "globals_t"]
+        ports = [x for x in ports if x["type"] == "globals_t" or x["type"] == "system_globals"]
         return len(ports) > 0
 
         
+    def get_clock_port(self):
+        ports = self.entityDef["port"]
+        ports = [x for x in ports if x["name"] == "clk" or x["type"] == "globals_t" or x["type"] == "system_globals"]
+        return ports[0]
 
     def ports(self,RemoveClock=False,ExpandTypes=False, Filter = None):
         ports = self.entityDef["port"]
-        if RemoveClock:
-            ports = remove_clock_from_ports(ports)  
+        ports = remove_clock_from_ports(ports)  
+        if not RemoveClock:
+            clk = self.get_clock_port()
+            ports = [clk] + ports
+            
         
         if Filter:
             ports = [x for x in ports if Filter(x)]
