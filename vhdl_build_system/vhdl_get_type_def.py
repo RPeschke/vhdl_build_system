@@ -44,7 +44,11 @@ def vhdl_get_type_def_record(rawText):
         raise Exception("end Token not found")
     
     rawText = sp[0]
-    rawText = rawText.split(" record ")[1]
+    try:
+        rawText = rawText.split(" record ")[1]
+    except:
+        print(rawText)
+        raise
 
     lst = get_list("record ("+ rawText +")", "record")
 
