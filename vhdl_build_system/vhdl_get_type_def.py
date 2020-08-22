@@ -56,6 +56,25 @@ def vhdl_get_type_def_record(rawText):
 
     return ret
 
+def vhdl_get_type_alias(rawText):
+    words = rawText.strip().split(" ")
+    words = list(filter(None, words)) 
+    ret = {}
+    ret["name"] = words[0]
+    sp = rawText.split(" ; ")
+    if len(sp) ==0:
+        raise Exception("end Token not found")
+    
+    rawText = sp[0]
+    rawText = rawText.split(" is ")[1]
+    ret["BaseType"] = rawText
+
+
+    ret["vhdl_type"] = "subtype"
+
+
+    return ret
+
 def vhdl_get_type_def_enum(rawText):
     ret = {}
     ret["name"]='unsopported type'
@@ -77,6 +96,27 @@ def vhdl_get_type_def_from_string(FileContent):
                 ret = vhdl_get_type_def_record(x)
             elif words[2]== '(':
                 ret = vhdl_get_type_def_enum(x)
+
+
+        if len(ret) > 0:
+            type_list.append(ret)
+
+
+    candidates =  fc.split(" subtype")
+    for x in candidates[1:]:
+        ret = {}
+        words = x.strip().split(" ")
+        words = list(filter(None, words)) 
+        if len(words)  > 1  and  "is" in words[1]:
+            ret["name"] = words[0]
+            if words[2]== 'array':
+                ret = vhdl_get_type_def_array(x)
+            elif words[2]== 'record':
+                ret = vhdl_get_type_def_record(x)
+            elif words[2]== '(':
+                ret = vhdl_get_type_def_enum(x)
+            else:
+                ret = vhdl_get_type_alias(x)
 
 
         if len(ret) > 0:

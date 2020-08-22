@@ -50,7 +50,9 @@ def vhdl_parser(FileName):
     ret["entityDef"]=entityDef
     
     Type_Def=findDefinitionsInFile(FileContent,"type","is")
-    ret["Type_Def"]=Type_Def
+    subType_Def=findDefinitionsInFile(FileContent,"subtype","is")
+    ret["Type_Def"]=Type_Def + subType_Def
+
 
     type_def_detail = vhdl_get_type_def_from_string(FileContent)
     ret["Type_Def_detail"]=type_def_detail
