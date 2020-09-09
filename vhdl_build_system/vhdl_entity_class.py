@@ -119,6 +119,7 @@ def expand_types(ports):
             type_def = get_type_from_name(p["type"])
             
             if type_def == None:
+                ret.append(p)
                 continue
             elif type_def["vhdl_type"] == "record":
                 array = expand_types_records(p,type_def)
@@ -129,6 +130,10 @@ def expand_types(ports):
                 for a in array:
                     ret.append(a)
 
+            elif type_def["vhdl_type"] == "subtype":
+                p["BaseType"] = type_def["BaseType"]
+                p["type"] = type_def["BaseType"]
+                ret.append(p)
                 
     return ret
 
