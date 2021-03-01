@@ -439,30 +439,70 @@ Sub load_csv_line_by_line_new()
   
 End Sub
 
-
-
-Sub load_test_case()
-
-
-
-
-
-
-sim_out_header_items = get_sim_out_header
-
+Sub load_sim_in()
+  sim_out_abs = get_simulation_out_path_win
 sim_in = get_simulation_input_path_win
+  
+  max_index = get_nr_of_lines(sim_out_abs)
+  Dim arr() As Double
+  Dim header_array() As Integer
+  
 
+  
+  
   Set fs = CreateObject("Scripting.FileSystemObject")
   Set f = fs.OpenTextFile(sim_in)
+  
+  sim_out_header_items = get_sim_out_header
+  sim_in_header_items = get_sim_in_header
+  ReDim Preserve arr(1 To max_index, 0 To UBound(sim_out_header_items))
+  
+  ReDim Preserve header_array(0 To UBound(sim_in_header_items))
+
+  For i = 0 To UBound(sim_in_header_items)
+    For j = 0 To UBound(sim_out_header_items)
+      If sim_in_header_items(i) = sim_out_header_items(j) Then
+        
+        header_array(i) = j
+      End If
+    
+    Next j
+  Next i
+    
 
 
+  row_number = 1
+   LineFromFile = f.ReadLine
+    Do While f.AtEndOfStream <> True
+        LineFromFile = f.ReadLine
+        LineItems = Split(LineFromFile, ",")
+        i_max = UBound(LineItems)
+           
+        For i = 0 To i_max
+
+            arr(row_number, header_array(i)) = LineItems(i)
+
+        Next i
+            
+
+    
+        row_number = row_number + 1
+    Loop
+    
+    f.Close
+    If row_number > 1 Then
+        Range("Book1_sim_input").Resize(row_number, UBound(sim_out_header_items) + 1).Value = arr
+    End If
+        
+    Sheets("Book1").Activate
+
+End Sub
 
 
-row_number = 0
+Sub load_book1_headers()
 
-sim_in_header = f.ReadLine
-sim_in_header = Replace(sim_in_header, " ", "")
-sim_in_header_items = Split(sim_in_header, ",")
+  sim_out_header_items = get_sim_out_header
+  sim_in_header_items = get_sim_in_header
 
 
 
@@ -479,41 +519,36 @@ For i = 0 To UBound(sim_out_header_items)
         
         
 Next i
-row_number = row_number + 1
+
+End Sub
 
 
-Do While f.AtEndOfStream <> True
-    LineFromFile = f.ReadLine
-    LineItems = Split(LineFromFile, ",")
-    i_max = UBound(LineItems)
-    j = 0
-    For i = 0 To UBound(sim_out_header_items)
-        If (Sheets("Book1").Range("D2").Offset(0, i).Value = "in") And sim_out_header_items(i) <> "" Then
-            Sheets("Book1").Range("D2").Offset(row_number + 1, i).Value = Trim(LineItems(j))
-            j = j + 1
-        
+Sub book1_make_connections()
+  sim_out_abs = get_simulation_out_path_win
 
-        End If
-        
-    Next i
-    
-    
-    row_number = row_number + 1
-
-Loop
-
-f.Close
-
-
+  
+  max_index = get_nr_of_lines(sim_out_abs)
+  
+ sim_out_header_items = get_sim_out_header
 For i = 0 To UBound(sim_out_header_items)
     r1 = Sheets("Book1").Range("A1:ZZ10234").Cells(2, i + 4).Value
     If (r1 = "out") Then
     '    =IF(R20C1=0, Simulation_output!R[-2]C[-3],HW_output!R[-3]C[3])
-        Sheets("Book1").Range("D3:D" & row_number + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[3])"
+        Sheets("Book1").Range("D3:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[3])"
     End If
 Next i
 
+End Sub
 
+
+Sub sim_in_make_connection()
+  sim_out_abs = get_simulation_out_path_win
+
+  
+  row_number = get_nr_of_lines(sim_out_abs)
+  sim_out_header_items = get_sim_out_header
+  sim_in_header_items = get_sim_in_header
+   
 j = 0
 For i = 0 To UBound(sim_out_header_items)
     r1 = Sheets("Book1").Range("A1:ZZ10234").Cells(2, i + 4).Value
@@ -530,6 +565,22 @@ For i = 0 To UBound(sim_in_header_items)
     Sheets("Simulation_Input").Range("A1").Offset(1, i).Value = Trim(sim_in_header_items(i))
 
 Next i
+End Sub
+Sub load_test_case()
+
+
+load_book1_headers
+
+
+load_sim_in
+
+
+
+book1_make_connections
+
+
+sim_in_make_connection
+
 End Sub
 Function get_sim_out_header() As Variant
  
@@ -548,6 +599,25 @@ Function get_sim_out_header() As Variant
     get_sim_out_header = sim_out_header_items
 
 End Function
+
+Function get_sim_in_header() As Variant
+ 
+    sim_in = get_simulation_input_path_win
+    Set fs = CreateObject("Scripting.FileSystemObject")
+    Set f = fs.OpenTextFile(sim_in)
+
+    sim_in_header = f.ReadLine
+    sim_in_header = Replace(sim_in_header, " ", "")
+    get_sim_in_header_items = Split(sim_in_header, ",")
+
+
+    f.Close
+
+
+    get_sim_in_header = get_sim_in_header_items
+
+End Function
+
 Function IsInArray(stringToBeFound As String, arr As Variant) As Boolean
 
 ret = False
@@ -749,4 +819,6 @@ Sub read_commandlineOutput()
       End If
         
 End Sub
+
+
 
