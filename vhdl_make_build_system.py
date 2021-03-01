@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(description='Make build scripts for vhdl_build_
 parser.add_argument('--path', help='Path to where the build system should be located',default="build")
 parser.add_argument('--ssh', help='ssh configuration used for running the Xilinx programs remotly',default=sshNotSet)
 parser.add_argument('--remotePath', help='Path on the remote machine that has the Xilinx programs', default="path_to_project")
-parser.add_argument('--protoBuild', help='Path to the proto build files', default="protoBuild/")
+parser.add_argument('--protoBuild', help='Path to the proto build files', default="vhdl_build_system/protoBuild/")
 parser.add_argument('--RunPcSsh', help='ssh configuration used for running the firmware on actual Hardware', default="labpc")
 parser.add_argument('--RunPcRemote', help='Path on the remote running PC', default="/home/belle2/Documents/tmp/")
 parser.add_argument('--jtag_PC', help='Path on the remote jtag PC', default="lab_xilinx")

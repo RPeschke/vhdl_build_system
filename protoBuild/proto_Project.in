@@ -1,0 +1,10 @@
+# Input file for MakeISE
+
+[ISE Configuration]
+#Generate project configuration
+#You can specify any parameter here which will override the input file 'defaults'
+Version = 14.7
+Device Family = Spartan6
+Package = fgg676
+Device = xc6slx150t
+Speed Grade = -3
