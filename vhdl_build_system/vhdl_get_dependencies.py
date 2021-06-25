@@ -121,8 +121,9 @@ def find_component(d,component, currentFileName="."):
     if currentFileName:
         return find_component(d,component, currentFileName)
 
-
-    raise Exception("unable to find component  " +component)
+    print("Unable to find: "+ component)
+    return ""
+    
 
 def find_used_components(d,FileName):
     ret = list()
