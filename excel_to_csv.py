@@ -7,7 +7,7 @@ def Convert2CSV123(XlsFile,Sheet,OutputFile):
 
     data_xls = pd.read_excel(XlsFile, Sheet, index_col=None)
 
-    data_xls.to_csv(OutputFile, encoding='utf-8',index =False)
+    data_xls.to_csv(OutputFile, encoding='utf-8',index =False, sep=" ") 
 
 
 
