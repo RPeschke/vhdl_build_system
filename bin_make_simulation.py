@@ -14,7 +14,7 @@ def main():
     if len(sys.argv) > 1:
         Entity = sys.argv[1]
     else:
-        Entity= "serialdataroutprocess_cl_tb_csv"
+        Entity= "reco_1d_tb_csv"
 
     print('Entity: ' , Entity)
     try_make_dir("./backup/xgen")
