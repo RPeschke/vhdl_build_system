@@ -7,7 +7,7 @@ import pandas as pd
 
 def Convert2CSV(XlsFile,Sheet,OutputFile):
 
-    data_xls = pd.read_excel(XlsFile, Sheet, index_col=None)
+    data_xls = pd.read_excel(XlsFile, Sheet, index_col=None , engine = 'openpyxl')
 
     data_xls.to_csv(OutputFile, encoding='utf-8',index =False)
 
@@ -58,6 +58,7 @@ def split_test_case(InputTestCase):
     
 
     Stimulus  = root[0].find('Stimulus').text  
+    Stimulus = Stimulus.replace(","," ")
     save_file(dirName +"/"+ root[0].find('inputfile').text, Stimulus)
     
     Reference = root[0].find('Reference').text

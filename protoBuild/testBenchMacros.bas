@@ -140,7 +140,7 @@ End Sub
 
 Sub make_test_case()
 
-
+ ActiveWorkbook.Save
 
 vFile = Range("TestCaseName").Value
 If vFile = "" Then
