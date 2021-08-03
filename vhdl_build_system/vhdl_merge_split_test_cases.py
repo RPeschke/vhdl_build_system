@@ -58,7 +58,7 @@ def split_test_case(InputTestCase):
     
 
     Stimulus  = root[0].find('Stimulus').text  
-    Stimulus = Stimulus.replace(","," ")
+    #Stimulus = Stimulus.replace(","," ")
     save_file(dirName +"/"+ root[0].find('inputfile').text, Stimulus)
     
     Reference = root[0].find('Reference').text

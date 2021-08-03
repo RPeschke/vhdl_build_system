@@ -32,9 +32,9 @@ Sub ssh_run_simulation()
      Show_Commandline = Worksheets("Setup").Range("Show_Commandline")
   
     
-  
+    DoEvents
     Shell Environ$("comspec") & " /c " & simulation_script, Show_Commandline
-    
+    DoEvents
 
 End Sub
 
@@ -122,7 +122,12 @@ i = 0
 Application.Wait (Now + TimeValue("0:00:01"))
 Do While is_simOut_exist = True Or i < 3
     Range("Timer").Value = i
-    Application.Wait (Now + TimeValue("0:00:01"))
+    Dim endTime As Date
+    endTime = DateAdd("s", 1, Now())
+    Do While Now() < endTime
+        DoEvents
+    Loop
+'  Application.Wait (Now + TimeValue("0:00:01"))
 
     i = i + 1
     If i > 30 Then
@@ -140,7 +145,7 @@ End Sub
 
 Sub make_test_case()
 
- ActiveWorkbook.Save
+
 
 vFile = Range("TestCaseName").Value
 If vFile = "" Then
@@ -404,7 +409,7 @@ Sub load_csv_line_by_line_new()
         LineFromFile = f.ReadLine
         LineItems = Split(LineFromFile, ";")
         i_max = UBound(LineItems)
-       
+        DoEvents
 
         If row_number = 0 Then
            For i = 0 To i_max
@@ -784,6 +789,8 @@ Sub read_commandlineOutput()
   UDP_end_of_command_token_found = False
   
       Do While f.AtEndOfStream <> True
+        DoEvents
+        
         LineFromFile = f.ReadLine
         Sheets("CommandlineOutput").Range("A2").Offset(i, 0).Value = LineFromFile
         i = i + 1
