@@ -788,7 +788,7 @@ Sub read_commandlineOutput()
   
   UDP_end_of_command_token_found = False
   
-      Do While f.AtEndOfStream <> True
+      Do While f.AtEndOfStream <> True And i < 100
         DoEvents
         
         LineFromFile = f.ReadLine
@@ -826,6 +826,10 @@ Sub read_commandlineOutput()
       End If
         
 End Sub
+
+
+
+
 
 
 
