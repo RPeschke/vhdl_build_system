@@ -92,7 +92,7 @@ echo "make ISE build system for $1"
 python3 {vhdl_build_system}/bin_make_implementation.py $1 $2
 cp "{protoBuild}/simpleTemplate.xise.in"   "./{buildpath}/$1/"
 mv "./{buildpath}/$1/simpleTemplate.xise.in"  "./{buildpath}/$1/$1_simpleTemplate.xise.in"
-python3  {makeisePath}/makeise.py "{buildpath}/$1/$1.in" "{buildpath}/$1/$1.xise"
+python3  {vhdl_build_system}/{makeisePath}/makeise.py "{buildpath}/$1/$1.in" "{buildpath}/$1/$1.xise"
 if [ "$3" != "" ]; then
   cp -rf $3 ./{buildpath}/$1/coregen/
 fi
