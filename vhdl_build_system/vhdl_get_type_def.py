@@ -1,15 +1,7 @@
-#!/usr/bin/python
-import sys
-import os,sys,inspect
 
-
-
-from .vhdl_parser import *
-
-from  .vhdl_get_dependencies import *
-from  .vhdl_get_entity_def import *
-
-
+from  .vhdl_get_entity_def import  get_list
+from  .vhdl_load_file_without_comments import load_file_witout_comments
+from  .generic_helper import get_text_between_outtermost
 
 
 def vhdl_get_type_def_array(rawText):

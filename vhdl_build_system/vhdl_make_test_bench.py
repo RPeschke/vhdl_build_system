@@ -1,119 +1,53 @@
-import argparse
-import os,sys,inspect
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-#sys.path.insert(0,parentdir) 
 
 
-
-from  .vhdl_get_dependencies      import *
-from  .vhdl_parser                import *
-from  .vhdl_get_entity_def        import *
-from  .vhdl_get_type_def_from_db  import *
-from  .vhdl_make_stand_alone_impl import *
-from  .vhdl_db                    import *
-from  .vhdl_make_test_bench_names import *
-
-from  .vhdl_entity2FileName       import *
-from  .vhdl_entity_class          import *
-from  .vhdl_merge_split_test_cases import *
-
-def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
-      
-    InputFile = entity2FileName(EntityName)
-    NumberOfRows = int(NumberOfRows)
-    entityDef = vhdl_get_entity_def(InputFile)
-    entetyCl  =  vhdl_entity(entityDef[0])
-    vhdl_get_dependencies_internal(EntityName)
-    
-    ParsedFile = vhdl_parser.vhdl_parser(InputFile)
-
-    make_package_file(entetyCl, ParsedFile["packageUSE"], OutputPath)
-    
-
-    read_entity = make_read_entity(entetyCl)
-    write_entity = make_write_entity(entetyCl)
-    tb_entity,test_bench = make_test_bench_for_test_cases(entetyCl)
-  
-    writeFile(OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".vhd" ,  read_entity+write_entity+test_bench) 
-
-    sim_in_filename =  OutputPath+"/"+get_test_bench_file_basename(entetyCl)+".csv"
-    
-    make_sim_csv_file(entetyCl,sim_in_filename,"out",NrOfEntires=NumberOfRows)
-    sim_out_filename =  OutputPath+"/"+get_test_bench_file_basename(entetyCl)+"_out.csv"
-    make_sim_csv_file(entetyCl,sim_out_filename,"none",NrOfEntires=NumberOfRows)
-    
-    make_xml_test_case(entetyCl, OutputPath)
+from  .vhdl_parser                 import vhdl_parser
 
 
+from  .vhdl_make_stand_alone_impl  import make_stand_alone_impl
 
-    make_stand_alone_impl( entityDef = entetyCl , path =  OutputPath, suffix= "")
+from  .vhdl_make_test_bench_names  import *
 
-    print("generated test bench file", tb_entity)
-    
-
-
-def writeFile(FileName,Content):
-    with open(FileName,'w',newline= "") as f:
-        f.write(Content)
+from .vhdl_dependency_db           import dependency_db
+from  .vhdl_entity_class           import vhdl_entity
+from  .vhdl_merge_split_test_cases import merge_test_case
+from .generic_helper               import save_file
 
 
+class test_bench_maker:
+    def __init__(self, EntityName,NumberOfRows,OutputPath) -> None:
+        self.InputFile = dependency_db.entity2FileName(EntityName)
+        self.NumberOfRows = int(NumberOfRows)
+        self.entetyCl  =  vhdl_entity(self.InputFile)
+        dependency_db.get_dependencies(EntityName)
+        self.ParsedFile = vhdl_parser(self.InputFile)
+        self.OutputPath = OutputPath
+        
+        self.CSV_in_FileName =  self.OutputPath+"/"+get_test_bench_file_basename(self.entetyCl)+".csv"
+        self.CSV_out_FileName =  self.OutputPath+"/"+get_test_bench_file_basename(self.entetyCl)+"_out.csv"
 
 
+    def make_package_file(self):
+        et_name = self.entetyCl.name()
+        write_pgk_file = self.OutputPath+"/"+et_name +"_IO_pgk.vhd"
+        
+       
+        write_pgk = get_IO_pgk_name(self.entetyCl)
+        
+        
+        userPackages = ""
+        for package in self.ParsedFile["packageUSE"]:
+                userPackages += "use work." + package + ".all;\n"
+        
+        records =""
+        records += self.make_IO_record("none")
+        records +="\n\n"
+        records += self.make_IO_record("out")
 
-def make_IO_record(entityDef,inOutFilter):
-    if inOutFilter == "none":
-        IO_record_name = get_writer_record_name(entityDef)
-    else :
-        IO_record_name =get_reader_record_name(entityDef)
-    
-    ports = entityDef.ports(Filter= lambda a : a["InOut"] != inOutFilter)
+        write_pgk_str = '''
 
-    RecordMember = ""
-    defaultsstr = ""
-    start = "    "    
-    for x in ports:
-        RecordMember += "    " + x["name"] + " : "+ x["type"] +  ";  \n"
-        defaultsstr += start + x["name"] + " => "+  x["default"]
-        start = ",\n    "
-
-    IO_record = '''
-  type {IO_record_name} is record
-{RecordMember}
-  end record;
-
-  constant {IO_record_name}_null : {IO_record_name} := ( 
-{defaultsstr}
-  );
-    '''.format(
-        IO_record_name=IO_record_name,
-        RecordMember=RecordMember,
-        defaultsstr=defaultsstr
-    )
-    return IO_record
-
-def make_package_file(entityDef,PackagesUsed,path="."):
-    et_name = entityDef.name()
-    write_pgk_file = path+"/"+et_name +"_IO_pgk.vhd"
-    
-   
-    write_pgk = get_IO_pgk_name(entityDef)
-    
-    
-    userPackages = ""
-    for package in PackagesUsed:
-            userPackages += "use work." + package + ".all;\n"
-    
-    records =""
-    records += make_IO_record(entityDef,"none")
-    records +="\n\n"
-    records += make_IO_record(entityDef,"out")
-
-    write_pgk_str = '''
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use ieee.std_logic_arith.all;
-use ieee.std_logic_unsigned.all;
 use work.CSV_UtilityPkg.all;
 
 
@@ -124,23 +58,157 @@ use work.CSV_UtilityPkg.all;
 package {write_pgk} is
 
 {records}
+
 end {write_pgk};
 
 package body {write_pgk} is
 
 end package body {write_pgk};
 
-    '''.format(
-        userPackages=userPackages,
-        write_pgk=write_pgk,
-        records=records
-    )
+        '''.format(
+            userPackages=userPackages,
+            write_pgk=write_pgk,
+            records=records
+        )
 
-    writeFile(write_pgk_file,write_pgk_str)
+        save_file(write_pgk_file,write_pgk_str)
 
+            
+
+        return write_pgk
+
+    def make_IO_record(self,inOutFilter):
+        if inOutFilter == "none":
+            IO_record_name = get_writer_record_name(self.entetyCl)
+        else :
+            IO_record_name =get_reader_record_name(self.entetyCl)
         
+        ports = self.entetyCl.ports(Filter= lambda a : a["InOut"] != inOutFilter)
 
-    return write_pgk
+        RecordMember = ""
+        defaultsstr = ""
+        
+        for x in ports:
+            RecordMember += "    " + x["name"] + " : "+ x["type"] +  ";  \n"
+        
+            
+
+        IO_record = '''
+type {IO_record_name} is record
+    {RecordMember}
+end record;
+'''.format(
+            IO_record_name=IO_record_name,
+            RecordMember=RecordMember,
+            defaultsstr=defaultsstr
+        )
+        return IO_record
+
+    def make_entities(self):
+        read_entity = make_read_entity(self.entetyCl)
+        write_entity = make_write_entity(self.entetyCl)
+        tb_entity,test_bench = make_test_bench_for_test_cases(self.entetyCl)
+  
+        save_file(self.OutputPath+"/"+get_test_bench_file_basename(self.entetyCl)+".vhd" ,  read_entity+write_entity+test_bench) 
+
+
+    def make_sim_csv_file(self, FilterOut):
+        
+        FileName =  self.CSV_in_FileName if FilterOut =="none" else self.CSV_out_FileName
+        
+           
+        ports = self.entetyCl.ports(Filter= lambda a : a["InOut"] != FilterOut, ExpandTypes =True)
+        
+        delimiter=", " if  FilterOut == "out" else "; "
+        
+        with open(FileName,"w",newline="") as f:
+       
+            if FilterOut == "out":
+                start = ""
+            else :
+                start = "time  " + delimiter
+                
+            for x in ports:
+                
+                f.write(start + x["plainName"])
+                start = delimiter
+                
+            f.write('\n')
+            
+            for i in range(self.NumberOfRows):
+                
+
+                if FilterOut == "out":
+                    start = ""
+                else :
+                    start = str(i) + delimiter
+                    
+
+                for x in ports:
+                    f.write(start + "0")
+                    start = delimiter
+                    
+                f.write('\n')
+
+    def get_test_bench_file_basename(self):
+        et_name   =  self.entetyCl.name()
+        tb_entity =  et_name +"_tb_csv"     
+        return tb_entity
+
+    def make_xml_test_case(self):
+        testCaseName = self.OutputPath +"/"+ self.get_test_bench_file_basename()+".testcase.xml"
+        testCaseXml='''<?xml version="1.0"?>
+<testcases>
+    <testcase name="{et_name}empty_test01">
+        <descitption> autogenerated empty test case</descitption>
+        <inputfile>{sim_in_filename}</inputfile>
+        <referencefile>{sim_out_filename}</referencefile>
+        <entityname>{et_name}</entityname>
+        <tc_type>Unclear</tc_type>
+        <difftool>diff</difftool>
+        <RegionOfInterest>
+            <Headers></Headers>
+            <Lines></Lines>
+        </RegionOfInterest>
+        <Stimulus/>
+        <Reference/>
+    </testcase>
+</testcases>
+        '''.format(
+            et_name= self.get_test_bench_file_basename(),
+            sim_in_filename=self.get_test_bench_file_basename()+".csv",
+            sim_out_filename=self.get_test_bench_file_basename()+"_out.csv",
+
+        )
+
+        save_file(testCaseName, testCaseXml)
+        merge_test_case(testCaseName)
+
+      
+def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
+
+    tb_maker = test_bench_maker(EntityName=EntityName,NumberOfRows=NumberOfRows, OutputPath=OutputPath)  
+    tb_maker.make_package_file()
+    tb_maker.make_entities()
+    tb_maker.make_sim_csv_file("out")
+    tb_maker.make_sim_csv_file("none")
+    tb_maker.make_xml_test_case()
+
+
+
+   
+
+
+
+    make_stand_alone_impl( entityDef = tb_maker.entetyCl , path =  OutputPath, suffix= "")
+
+    print("generated test bench file", tb_maker.get_test_bench_file_basename())
+    
+
+
+
+
+
 
 
 
@@ -154,7 +222,7 @@ def make_read_entity(entityDef):
     connections=""
     index = 0
     for x in ports:
-        connections += "  integer_to_" + x["type_shorthand"] + '(csv_r_data(' +str(index) +'), data.' + x["name"] + ');\n'
+        connections += '  csv_from_integer(csv_r_data(' +str(index) +'), data.' + x["name"] + ');\n'
         index+=1 
 
     reader_entity_str = '''
@@ -237,7 +305,7 @@ def make_write_entity(entityDef,path="."):
     connections=""
     index = 0
     for x in ports:
-        connections += "  " + x["type_shorthand"] + '_to_integer(data.' + x["name"] + ', data_int(' +str(index) +') );\n'
+        connections += '  csv_to_integer(data.' + x["name"] + ', data_int(' +str(index) +') );\n'
         index+=1 
 
     writer_entity_str='''
@@ -343,8 +411,8 @@ end entity;
 
 architecture behavior of {tb_entity} is 
   signal clk : std_logic := '0';
-  signal data_in : {readerRecordName} := {readerRecordName}_null;
-  signal data_out : {writerRecordName} := {writerRecordName}_null;
+  signal data_in : {readerRecordName};
+  signal data_out : {writerRecordName};
 
 begin 
 
@@ -391,79 +459,6 @@ end behavior;
     return tb_entity,testBenchStr
 
 
-
-
-def make_sim_csv_file(entityDef,FileName,FilterOut,NrOfEntires=1000):
-    et_name = entityDef.name()
-       
-    ports = entityDef.ports(Filter= lambda a : a["InOut"] != FilterOut, ExpandTypes =True)
-    
-    if FilterOut == "out":
-        delimiter=", "
-    else:
-        delimiter="; "
-    
-    with open(FileName,"w",newline="") as f:
-   
-        if FilterOut == "out":
-            start = ""
-        else :
-            start = "time  " + delimiter
-            
-        for x in ports:
-            
-            f.write(start + x["plainName"])
-            start = delimiter
-            
-        f.write('\n')
-        
-        for i in range(NrOfEntires):
-            
-
-            if FilterOut == "out":
-                start = ""
-            else :
-                start = str(i) + delimiter
-                
-
-            for x in ports:
-                f.write(start + "0")
-                start = delimiter
-                
-            f.write('\n')
-
-
-def make_xml_test_case(entityDef,path):
-    et_name = get_test_bench_file_basename(entityDef)
-    testCaseName = path+"/"+get_test_bench_file_basename(entityDef)+".testcase.xml"
-    testCaseXml='''<?xml version="1.0"?>
-<testcases>
-    <testcase name="{et_name}empty_test01">
-        <descitption> autogenerated empty test case</descitption>
-        <inputfile>{sim_in_filename}</inputfile>
-        <referencefile>{sim_out_filename}</referencefile>
-        <entityname>{et_name}</entityname>
-        <tc_type>Unclear</tc_type>
-        <difftool>diff</difftool>
-        <RegionOfInterest>
-            <Headers></Headers>
-            <Lines></Lines>
-        </RegionOfInterest>
-        <Stimulus/>
-        <Reference/>
-    </testcase>
-</testcases>
-    '''.format(
-        et_name= et_name,
-        sim_in_filename=get_test_bench_file_basename(entityDef)+".csv",
-        sim_out_filename=get_test_bench_file_basename(entityDef)+"_out.csv",
-
-    )
-
-    writeFile(testCaseName, testCaseXml)
-    merge_test_case(testCaseName)
-
-  
 
 
 

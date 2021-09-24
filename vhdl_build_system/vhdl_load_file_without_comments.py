@@ -1,10 +1,3 @@
-import os
-import shelve
-import fnmatch, re
-import os,sys,inspect
-
-
-
 def load_file_witout_comments(FileName):
     FileContent = ""
     with open(FileName, "r") as f:

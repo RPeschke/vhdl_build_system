@@ -5,7 +5,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
-from vhdl_build_system.vhdl_build_system.vhdl_merge_split_test_cases import *
+from vhdl_build_system.vhdl_build_system.vhdl_merge_split_test_cases import split_test_case
 
 
 def main():

@@ -5,10 +5,8 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 
-from  vhdl_build_system.vhdl_parser           import *
-from  vhdl_build_system.vhdl_get_dependencies import *
-from  vhdl_build_system.vhdl_get_entity_def   import *
-from  vhdl_build_system.vhdl_entity_to_csv    import *
+from  vhdl_build_system.generic_helper        import try_make_dir
+from  vhdl_build_system.vhdl_entity_to_csv    import vhdl_entity_to_csv
 
 def main():
     if len(sys.argv) > 1:

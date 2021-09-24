@@ -1,39 +1,5 @@
-#!/usr/bin/python
-import os,sys,inspect
-
-
-from  .vhdl_parser import *
-from  .vhdl_get_dependencies import *
-from  .vhdl_load_file_without_comments import * 
-
-
-def get_text_between_outtermost(raw_text,startToken,EndToken):
-    ret = ""
-    
-    sp = raw_text.find(startToken)
-    if sp == -1:
-        return ""
-    TokenLevel = 1
-    cut_start = sp+len(startToken)
-    current_index = cut_start
-    
-    while TokenLevel > 0:
-        startIndex = raw_text.find(startToken,current_index)
-        endIndex = raw_text.find(EndToken,current_index)
-
-        if endIndex == -1:
-            raise Exception("end Token not find",raw_text)
-        elif startIndex > -1 and startIndex < endIndex:
-            TokenLevel+=1
-            current_index = startIndex +len(startToken)
-
-            continue
-        
-        elif startIndex == -1 or endIndex < startIndex:
-            TokenLevel -= 1
-            current_index = endIndex +len(EndToken)
-            if TokenLevel == 0:
-                return raw_text[cut_start:endIndex]
+from  .vhdl_load_file_without_comments import load_file_witout_comments
+from .generic_helper import get_text_between_outtermost
 
 
 

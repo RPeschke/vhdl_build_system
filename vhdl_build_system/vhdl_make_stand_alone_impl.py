@@ -2,9 +2,6 @@ import binascii
 import socket
 
 
-import os,sys,inspect
-
-
 
 
 from  .vhdl_make_test_bench   import *
@@ -78,8 +75,7 @@ library IEEE;
   use IEEE.std_logic_1164.all;
   use IEEE.numeric_std.all;
 
-library UNISIM;
-  use UNISIM.VComponents.all;
+
   use work.UtilityPkg.all;
 
   use work.{write_pgk}.all;
