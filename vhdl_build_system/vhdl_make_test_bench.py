@@ -375,17 +375,20 @@ def make_test_bench_for_test_cases(entityDef):
 
     ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock = True)
     clk_port = entityDef.get_clock_port()
-    input2OutputConnection = ""
+    input2OutputConnection = "  data_out.clk <=clk;\n"
     if entityDef.IsUsingGlobals():
-        input2OutputConnection ="""  data_out.{globals}.clk <=clk;
+        input2OutputConnection ="""  
+  data_out.{globals}.clk <=clk;
   data_out.{globals}.reg <= data_in.{globals}.reg;
   data_out.{globals}.rst <= data_in.{globals}.rst;
   """.format(
       globals = clk_port["name"]
-  )
+    )
+    
+        
     ports = [x for x in ports if x["type"] != "globals_t"]
     for x in ports:
-        input2OutputConnection +=  'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
+        input2OutputConnection +=  '  data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
 
     
     ports = entityDef.ports(RemoveClock = True)
