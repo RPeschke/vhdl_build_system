@@ -5,7 +5,7 @@ from  .vhdl_parser                 import vhdl_parser
 
 from  .vhdl_make_stand_alone_impl  import make_stand_alone_impl
 
-from  .vhdl_make_test_bench_names  import *
+from  .vhdl_make_test_bench_names  import get_IO_pgk_name, get_writer_record_name, get_reader_record_name, get_reader_entity_name, get_includes, get_writer_entity_name
 
 from .vhdl_dependency_db           import dependency_db
 from  .vhdl_entity_class           import vhdl_entity

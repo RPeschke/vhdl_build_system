@@ -4,9 +4,9 @@ import socket
 
 
 
-from  .vhdl_make_test_bench   import *
-from  .vhdl_parser            import *
-from  .vhdl_make_test_bench_names                 import *
+
+
+from  .vhdl_make_test_bench_names                 import get_IO_pgk_name, get_reader_record_name, get_writer_record_name
 
 def make_stand_alone_entity_get_DUT(entityDef):
   ports = entityDef.ports(RemoveClock=True)

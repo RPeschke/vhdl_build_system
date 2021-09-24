@@ -1,7 +1,6 @@
-from  .vhdl_parser import *
 from .generic_helper import try_make_dir, save_file
-from  .vhdl_make_simulation import *
-from .vhdl_get_list_of_files import *
+from  .vhdl_make_simulation import vhdl_make_simulation
+from .vhdl_get_list_of_files import getListOfFiles
 
 from shutil import copyfile
 

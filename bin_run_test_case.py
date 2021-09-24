@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--path', help='Path to where the build system is located',default="build/")
     parser.add_argument('--test', help='specifies a specific cases to run. if not set it will run all test cases',default="tests/TRACK_FINDER_INTERSECTOR/track_finder_intersector_tb_csv.testcase.xml")
     parser.add_argument('--update', help='Update the reference output file. use --update true to update a test case.',default = "False")
-    parser.add_argument('--verbose', help='Update the reference output file. use --update true to update a test case.',default = "True")
+    parser.add_argument('--verbose', help='Update the reference output file. use --update true to update a test case.',default = "False")
 
     args = parser.parse_args()
     
