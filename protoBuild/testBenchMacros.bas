@@ -24,8 +24,27 @@ Sub Run_Simulation()
  
  Range("switch_hw_sim").Value = 0
  
+ 
+ sim_out_abs = get_simulation_out_path_win
+ remove_file sim_out_abs
+ 
+ sim_in_abs = get_simulation_input_path_win
+ remove_file sim_in_abs
+ 
 End Sub
+Function FileExists(ByVal FileToTest As String) As Boolean
+   FileExists = (Dir(FileToTest) <> "")
+End Function
+Sub remove_file(FileToDelete)
 
+   If FileExists(FileToDelete) Then 'See above
+      ' First remove readonly attribute, if set
+      SetAttr FileToDelete, vbNormal
+      ' Then delete the file
+      Kill FileToDelete
+   End If
+
+End Sub
 Sub ssh_run_simulation()
      simulation_script = Worksheets("Setup").Range("full_script_BASH")
      
@@ -64,7 +83,7 @@ Set ws = ThisWorkbook.Worksheets("Simulation_Input")
 
    ws.Copy
    Application.DisplayAlerts = False
-   ActiveWorkbook.SaveAs FileName:=PathName, _
+   ActiveWorkbook.SaveAs fileName:=PathName, _
         FileFormat:=xlCSV, CreateBackup:=False, _
         AccessMode:=xlExclusive, _
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
@@ -307,10 +326,10 @@ Sub ssh_run_on_hardware()
     Shell Environ$("comspec") & " /c " & Full_Run_On_HW_Script_bash, Show_Commandline
 End Sub
 
-Function get_nr_of_lines(FileName) As Long
+Function get_nr_of_lines(fileName) As Long
 
   Set fs = CreateObject("Scripting.FileSystemObject")
-  Set f = fs.OpenTextFile(FileName)
+  Set f = fs.OpenTextFile(fileName)
   row_number = 0
 
   Do While f.AtEndOfStream <> True
@@ -700,13 +719,13 @@ Sub chooses_test_case()
  
         ' Display paths of each file selected
         For lngCount = 1 To .SelectedItems.Count
-            FileName = .SelectedItems(lngCount)
+            fileName = .SelectedItems(lngCount)
         Next lngCount
  
     End With
     
     w_path = Worksheets("Setup").Range("w_path").Value
-    shell_Command = "python " & w_path & "\vhdl_build_system\bin_split_test_case.py --InputTestCase " & FileName
+    shell_Command = "python " & w_path & "\vhdl_build_system\bin_split_test_case.py --InputTestCase " & fileName
 'shell_Command = "echo ""python " & w_path & "\bin_merge_test_case_to_one_file.py --InputTestCase "" > test.txt"
     Shell Environ$("comspec") & " /c " & shell_Command, 0
     Application.Wait (Now + TimeValue("0:00:02"))
@@ -714,8 +733,8 @@ Sub chooses_test_case()
     Set oXMLFile = CreateObject("Microsoft.XMLDOM")
     
      
-    pathtoxmlFile = Left(FileName, InStrRev(FileName, "\") - 1)
-    oXMLFile.Load (FileName)
+    pathtoxmlFile = Left(fileName, InStrRev(fileName, "\") - 1)
+    oXMLFile.Load (fileName)
     
     
 
@@ -826,6 +845,8 @@ Sub read_commandlineOutput()
       End If
         
 End Sub
+
+
 
 
 
