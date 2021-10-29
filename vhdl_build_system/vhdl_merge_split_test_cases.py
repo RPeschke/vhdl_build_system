@@ -1,25 +1,20 @@
 import xml.etree.ElementTree as ET
-import os,sys,inspect
+
 import os
-from shutil import copyfile
+
 import pandas as pd
+
+from .generic_helper import load_file, save_file
 
 
 def Convert2CSV(XlsFile,Sheet,OutputFile):
 
-    data_xls = pd.read_excel(XlsFile, Sheet, index_col=None)
+    data_xls = pd.read_excel(XlsFile, Sheet, index_col=None , engine = 'openpyxl')
 
     data_xls.to_csv(OutputFile, encoding='utf-8',index =False)
 
 
-def load_file(fileName):
-    with open(fileName) as f:
-        return f.read() 
 
-def save_file(fileName,Data):
-    Data = Data.replace("\n","\r\n")
-    with open(fileName,"w", newline = "") as f:
-        return f.write(Data) 
 
 def merge_test_case(InputTestCase,SkipHeader1 = False):
     tree = ET.parse(InputTestCase)
@@ -58,10 +53,11 @@ def split_test_case(InputTestCase):
     
 
     Stimulus  = root[0].find('Stimulus').text  
-    save_file(dirName +"/"+ root[0].find('inputfile').text, Stimulus)
+    #Stimulus = Stimulus.replace(","," ")
+    save_file(dirName +"/"+ root[0].find('inputfile').text, Stimulus, "\r\n" )
     
     Reference = root[0].find('Reference').text
-    save_file(dirName +"/"+ root[0].find('referencefile').text, Reference)
+    save_file(dirName +"/"+ root[0].find('referencefile').text, Reference, "\r\n" )
     
     
     

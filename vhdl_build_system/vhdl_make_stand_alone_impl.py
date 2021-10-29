@@ -2,14 +2,11 @@ import binascii
 import socket
 
 
-import os,sys,inspect
 
 
 
 
-from  .vhdl_make_test_bench   import *
-from  .vhdl_parser            import *
-from  .vhdl_make_test_bench_names                 import *
+from  .vhdl_make_test_bench_names                 import get_IO_pgk_name, get_reader_record_name, get_writer_record_name
 
 def make_stand_alone_entity_get_DUT(entityDef):
   ports = entityDef.ports(RemoveClock=True)
@@ -78,8 +75,7 @@ library IEEE;
   use IEEE.std_logic_1164.all;
   use IEEE.numeric_std.all;
 
-library UNISIM;
-  use UNISIM.VComponents.all;
+
   use work.UtilityPkg.all;
 
   use work.{write_pgk}.all;

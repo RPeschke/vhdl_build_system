@@ -1,20 +1,16 @@
 import os
-import pickle
-import shelve
-import fnmatch, re
-import os,sys,inspect
-
-
-from .vhdl_get_list_of_files import *
 
 
 
-from .vhdl_get_type_def import *
+from .vhdl_get_list_of_files import getListOfFiles
 
-from .vhdl_load_file_without_comments import * 
-from .vhdl_db import *
 
-from .vhdl_get_list_of_files import *
+
+from .vhdl_get_type_def import vhdl_get_type_def_from_string
+
+from .vhdl_load_file_without_comments import load_file_witout_comments
+
+
 
 
 
@@ -63,13 +59,6 @@ def vhdl_parser(FileName):
     packageUSE=findDefinitionsInFile(FileContent,"work.","all",".")
     ret["packageUSE"]=packageUSE
 
-    #types_used_s=findDefinitionsInFile(FileContent,"signal",";",":",1)
-    #types_used_s_no_default=findDefinitionsInFile(FileContent,"signal",";"," ",2)
-    #types_used_v=  findDefinitionsInFile(FileContent,"variable",";",":",1)
-    #types_used_v_no_default=findDefinitionsInFile(FileContent,"variable",";"," ",2)
-    #types_used_c=  findDefinitionsInFile(FileContent,"constant",";",":",1)
-
-    #ret["types_used"]=types_used_s +types_used_v +types_used_s_no_default +types_used_v_no_default + types_used_c
 
 
     entityUSE_G=findDefinitionsInFile(FileContent,"entity","generic")
@@ -103,15 +92,15 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
 
 
 
-def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
+def vhdl_parse_folder(database, Folder = "."):
 
     print ( '<vhdl_parse_folder FolderName="'+ Folder +'">')
-    d = LoadDB(DataBaseFile)
+
     print ( '  <getListOfFiles> ')
     flist = getListOfFiles(Folder,"*.vhd")
 
     print ( '  </getListOfFiles> ')
-    keys = d.keys()
+    keys = database.keys()
     for f in flist:
         if "build/" in f:
             continue
@@ -121,24 +110,25 @@ def vhdl_parse_folder(Folder = ".", DataBaseFile = "build/DependencyBD"):
             #print(f)
         if f in keys:
             modTime_file = os.path.getmtime(f)
-            modFile_db = d[f]["Modified"]
+            modFile_db = database[f]["Modified"]
             
             if modTime_file == modFile_db:
                 continue
             
         print("process file: ",f)
         ret= vhdl_parser(f)
-        d[f] = ret
+        database[f] = ret
     
     flist = getListOfFiles(Folder,"*.xco*")
     for f in flist:
         if "build/" not in f:
             ret = vhdl_parse_xco(f)
             #print(f)
-            d[f] = ret
+            database[f] = ret
     
-    saveDB(DataBaseFile,d)
+
     
     print ( '</vhdl_parse_folder>')
+    return database
 
 

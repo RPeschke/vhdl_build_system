@@ -1,5 +1,6 @@
 
-from .vhdl_get_type_def_from_db  import *
+from .vhdl_dependency_db  import dependency_db
+from .vhdl_get_entity_def import vhdl_get_entity_def
 
 knownName= list()
 
@@ -116,7 +117,7 @@ def expand_types(ports):
         if isPrimitiveType(p["type"]):
             ret.append(p)
         else:
-            type_def = get_type_from_name(p["type"])
+            type_def = dependency_db.get_type_from_name(p["type"])
             
             if type_def == None:
                 ret.append(p)
@@ -157,6 +158,8 @@ def set_default_value(ports):
 
 class vhdl_entity:
     def __init__(self,entityDef):
+        if isinstance(entityDef, str):
+            entityDef = vhdl_get_entity_def(entityDef)[0]
         self.entityDef = entityDef
 
     def name(self):

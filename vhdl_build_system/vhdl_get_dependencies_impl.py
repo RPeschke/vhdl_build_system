@@ -1,80 +1,8 @@
-import os
-import shelve
-import fnmatch, re
 
+def isSubPath(sub, main):
+    sub = sub[:sub.rfind("/")]
 
-from .vhdl_db import *
-from .vhdl_parser import * 
-from .vhdl_xgen import *
-
-
-def remove_doublication_from_list(inList):
-    ret  = list(dict.fromkeys(inList))
-    return ret
-
-def try_make_dir(name,isRelativePath=True):
-    try:
-        if isRelativePath:
-            abs_name = os.getcwd()+"/" +name
-        else:
-            abs_name = name
-
-        os.mkdir(abs_name)
-    except OSError:  
-        print ("Creation of the directory %s failed" % name)
-    else:  
-        print ("Successfully created the directory %s " % name)
-
-
-def vhdl_get_dependencies_internal(Entity,DataBaseFile="build/DependencyBD"):
-    
-    d =LoadDB(DataBaseFile)
-    TB_entity = Entity
-    eneties_used ={}
-  
-    eneties_used[TB_entity] = find_entity(d,TB_entity,".")
-
-    old_length = 0
-    new_length = 1
-    while (new_length > old_length):
-        old_length = new_length
-        eneties_used = make_depency_list(d,eneties_used ,find_used_entities,find_entity)
-        eneties_used = make_depency_list(d,eneties_used ,find_used_package,find_PacketDef)
-        eneties_used = make_depency_list(d,eneties_used ,find_used_components,find_component)
-        new_length = len(eneties_used)
-
-    fileList=list()
-    for k in eneties_used:
-        FileName =eneties_used[k].replace("\\","/") 
-        if FileName not in fileList:
-            fileList.append(FileName)
-        else:
-            print("doublication "+ FileName)
-
-    saveDB(DataBaseFile,d)      
-    return fileList        
-    
-def vhdl_get_dependencies(Entity,OutputFile=None,DataBaseFile="build/DependencyBD"):
-    
-    
-    fileList = vhdl_get_dependencies_internal(Entity, DataBaseFile)
-    
-    if not OutputFile:
-        OutputFile =  "build/" +Entity+"/"+Entity+".prj"
-        outPath = "build/" +Entity
-    
-    try_make_dir(outPath)
-     
-    with open(OutputFile,'w') as f:
-        for k in fileList:
-            lines = 'vhdl work "../../' + k + '"\n'
-            f.write(lines)
-    
-    return fileList
-
-
-
-
+    return  main.startswith(sub)
 
 def find_entity(d,Entity, currentFileName="."):
     for k in d.keys():
@@ -90,7 +18,13 @@ def find_entity(d,Entity, currentFileName="."):
     currentFileName = currentFileName[:currentFileName.rfind("/")]
     if currentFileName:
         return find_entity(d,Entity, currentFileName)
-    raise Exception("unable to find Entity " +Entity)
+    
+    print("unable to find Entity " +Entity)
+    return None
+     
+
+
+
 
 
 def find_used_entities(d,FileName):
@@ -136,10 +70,7 @@ def find_used_components(d,FileName):
 
     return ret
 
-def isSubPath(sub, main):
-    sub = sub[:sub.rfind("/")]
 
-    return  main.startswith(sub)
 
 def find_PacketDef(d,Entity, currentFileName="."):
     #print(Entity)
@@ -156,7 +87,8 @@ def find_PacketDef(d,Entity, currentFileName="."):
     if currentFileName:
         return find_PacketDef(d,Entity, currentFileName)
 
-    raise Exception("unable to find package " +Entity)
+    print("unable to find package " +Entity)
+    return None
 
 
 
@@ -170,6 +102,7 @@ def find_used_package(d,FileName):
         
 
     return ret
+
 
 
 def make_depency_list(d, eneties_used, find_used_func,find_def_func):
@@ -194,9 +127,5 @@ def make_depency_list(d, eneties_used, find_used_func,find_def_func):
         eneties_used = new_EntitesUsed.copy()
     
     return eneties_used
-
-
-
-
 
 

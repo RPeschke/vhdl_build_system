@@ -1,12 +1,6 @@
-#!/usr/bin/python
-import sys
-import os,sys,inspect
-
-
-from  .vhdl_parser import *
-from  .vhdl_get_dependencies import *
-from  .vhdl_make_simulation import *
-from .vhdl_get_list_of_files import *
+from .generic_helper import try_make_dir, save_file
+from  .vhdl_make_simulation import vhdl_make_simulation
+from .vhdl_get_list_of_files import getListOfFiles
 
 from shutil import copyfile
 
@@ -24,9 +18,13 @@ def FileBaseNameNotInList(FullName,FileList,DotIndex = -2):
     return True
 
 def vhdl_make_implementation(Entity, UCF_file):
-
     build_path =  "build/"
+    try_make_dir(build_path+"/"+Entity)
+    copyfile("vhdl_build_system/protoBuild//proto_Project.in",build_path+"/"+Entity + "/" +Entity + "_proto_Project.in" )
+    
     vhdl_make_simulation(Entity,build_path)
+
+
     Entity_build_path = build_path+  Entity +"/"
     project_file_path = Entity_build_path + Entity+ ".prj"
 
@@ -131,8 +129,7 @@ entityName=Entity,
 ucf_file="../../" + UCF_file
 )
     Entity_build_path =  "build/"
-    with open(Entity_build_path+Entity+"/build_implementation.sh",'w',newline="") as f:
-        f.write(script)
+    save_file(Entity_build_path+Entity+"/build_implementation.sh", script)
     
     synt = '''#/bin/bash
 #syntesize
@@ -142,6 +139,5 @@ entityName=Entity,
 ucf_file="../../" + UCF_file
 )
     Entity_build_path =  "build/"
-    with open(Entity_build_path+Entity+"/build_syntesize.sh",'w',newline="") as f:
-        f.write(script)
+    save_file(Entity_build_path+Entity+"/build_syntesize.sh", synt)
 

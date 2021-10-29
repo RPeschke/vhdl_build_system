@@ -1,37 +1,34 @@
-#!/usr/bin/python
-import sys
-
-import os,sys,inspect
+import os
 
 
-from  .vhdl_parser import *
-from  .vhdl_get_dependencies import *
+from .generic_helper import try_make_dir,save_file,load_file
 
-def vhdl_create_file(FileName,Content=""):
-    with open(FileName,'w') as f:
-        f.write(Content)
+from .vhdl_dependency_db  import dependency_db
+
+
+
 
 
 def make_TCL(name,with_quit=True,runtime=2000):
-    with open(name,'w',newline="") as f:
-        f.write('onerror ' + '{resume' + '} \n')
-        f.write('wave add / \n ')
-        f.write('run ' + str(runtime) + ' ns; \n ')
-        if with_quit:
-            f.write('quit -f;  \n ')
+    content = 'onerror {resume' + '} \n'+ \
+    'wave add / \n ' + \
+    'run ' + str(runtime) + ' ns; \n ' 
+    if with_quit:
+        content += 'quit -f;  \n '
+    save_file(name, content)
 
 def get_handle_isim_script(isim_file="isim.cmd",with_gui=False):
-    handle_isimBatchFile = ""
-    handle_isimBatchFile += 'if [ "$3" != "" ]; then\n'
-    handle_isimBatchFile += '  tclbatchfile=$1\n'
-    handle_isimBatchFile += 'else\n'
-    handle_isimBatchFile += '  clock_speed=$(cat $clock_speed_file)\n'
-    handle_isimBatchFile += '  line_count=$(wc -l < $inFile)\n'
-    handle_isimBatchFile += '  runtime="$(($clock_speed * ($line_count+10)))"\n'
-    handle_isimBatchFile += '  tclbatchfile=' + isim_file + '\n'
-    handle_isimBatchFile += '  echo "onerror {' + 'resume}" > $tclbatchfile\n'    
-    handle_isimBatchFile += '  echo "wave add /" >> $tclbatchfile\n'
-    handle_isimBatchFile += '  echo "run $runtime ns;" >> $tclbatchfile\n'
+    handle_isimBatchFile = "" +\
+    'if [ "$3" != "" ]; then\n' +\
+    '  tclbatchfile=$1\n' +\
+    'else\n' +\
+    '  clock_speed=$(cat $clock_speed_file)\n' +\
+    '  line_count=$(wc -l < $inFile)\n' +\
+    '  runtime="$(($clock_speed * ($line_count+10)))"\n'+\
+    '  tclbatchfile=' + isim_file + '\n'+\
+    '  echo "onerror {' + 'resume}" > $tclbatchfile\n'    +\
+    '  echo "wave add /" >> $tclbatchfile\n'+\
+    '  echo "run $runtime ns;" >> $tclbatchfile\n'
     if not with_gui:
         handle_isimBatchFile += '  echo "quit -f;" >> $tclbatchfile\n'
 
@@ -124,16 +121,13 @@ def make_vivado_build_run_script(entity, BuildFolder = "build/"):
 
 def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):  
     OutputPath = BuildFolder + entity + "/"
-    OutputBuild = OutputPath + "make.sh"
-    outputExe =  entity + ".exe"
-    inputPath =  entity+ ".prj"
     
     CSV_readFile=OutputPath+entity+".csv" 
     CSV_writeFile=OutputPath+entity+"_out.csv" 
     
-    vhdl_create_file(CSV_readFile)
-    vhdl_create_file(CSV_writeFile)
-    vhdl_create_file(OutputPath+"clock_speed.txt","10")
+    save_file(CSV_readFile,"")
+    save_file(CSV_writeFile,"")
+    save_file(OutputPath+"clock_speed.txt","10")
 
 
     try_make_dir(OutputPath+"/backup")
@@ -163,31 +157,25 @@ def vhdl_make_simulation_intern(entity,BuildFolder = "build/"):
 def extract_header_from_top_file(Entity, FileName,BuildFolder):
     print("=======Extracting Header From File========")
     print(FileName)
-    dirName = os.path.dirname(FileName)
-    with open(FileName) as f:
-        Content = f.read()
+
+    Content =load_file(FileName)
+    
     
     h1 = Content.split("</header>")
     if len(h1)>1:
-        #print (h1[0].split("<header>")[1])
         Content=h1[0].split("<header>")[1]+"\n"
     else:
         Content=""
 
-    with open(BuildFolder+Entity+ "/"+ Entity +"_header.txt","w",newline="") as f:
-        Content = f.write(Content)
+    save_file(BuildFolder+Entity+ "/"+ Entity +"_header.txt", Content)
     print("=======Done Extracting Header From File====")
 
 
 def vhdl_make_simulation(Entity,BuildFolder = "build/",reparse=True):
-
-    
-    DataBaseFile=BuildFolder+"DependencyBD"
     if reparse:
-        vhdl_parse_folder(Folder= ".",DataBaseFile=DataBaseFile)
+        dependency_db.reparse_files()
     
-    
-    fileList = vhdl_get_dependencies(Entity,DataBaseFile=DataBaseFile)
+    fileList = dependency_db.get_dependencies_and_make_project_file(Entity)
     extract_header_from_top_file(Entity, fileList[0],BuildFolder)
 
 
