@@ -320,7 +320,7 @@ entity {EntityName} is
    BUSB_DIN_DAC		       : out std_logic := '0';
    --
    -- TRIGGER SIGNALS
-   -- TARGET_TB                : in tb_vec_type;
+    TARGET_TB                : in tb_vec_type;
    
    TDC_DONE                 : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ; -- move to readout signals
    TDC_MON_TIMING           : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ;  -- add the ref to the programming of the TX chip
@@ -328,7 +328,16 @@ entity {EntityName} is
     WL_CLK_N : out STD_LOGIC_VECTOR (9 downto 0) := (others => '0')  ;
     WL_CLK_P  : out STD_LOGIC_VECTOR (9 downto 0) := (others => '0')  ;
     SSTIN_N :  out STD_LOGIC_VECTOR (9 downto 0) := (others => '0')  ;
-    SSTIN_P :  out STD_LOGIC_VECTOR (9 downto 0) := (others => '0')  
+    SSTIN_P :  out STD_LOGIC_VECTOR (9 downto 0) := (others => '0')  ;
+   
+    --- MPPC ADC
+    SCL_MON                  : out STD_LOGIC := '0';
+    SDA_MON                  : inout STD_LOGIC := '0';
+    
+    TDC_CS_DAC               : out std_logic_vector(9 downto 0):= (others => '0') ; 
+
+   TDC_AMUX_S               : out std_logic_vector(3 downto 0):= (others => '0') ; -- what the difference between these two?
+   TOP_AMUX_S               : out std_logic_vector(3 downto 0):= (others => '0')  -- TODO: check schematic
   );
 end entity;
 
