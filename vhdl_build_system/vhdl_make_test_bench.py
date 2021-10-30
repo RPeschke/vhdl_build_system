@@ -114,7 +114,7 @@ end record;
 
     def make_sim_csv_file(self, FilterOut):
         
-        FileName =  self.CSV_in_FileName if FilterOut =="none" else self.CSV_out_FileName
+        FileName =  self.CSV_in_FileName if FilterOut =="out" else self.CSV_out_FileName
         
            
         ports = self.entetyCl.ports(Filter= lambda a : a["InOut"] != FilterOut, ExpandTypes =True)
