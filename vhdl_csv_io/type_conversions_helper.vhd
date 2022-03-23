@@ -85,7 +85,7 @@ end procedure;
        end if;
     end loop;
     
-    Int_out <= to_integer(signed('0'&SLV_in));
+    Int_out <= to_integer(signed(SLV_in));
   end procedure;
 
   procedure sl_to_integer(signal SL_in : in STD_LOGIC ; signal Int_out : out integer) is begin
@@ -129,7 +129,7 @@ end procedure;
   begin
     integer_to_slv_var(I_in ,I_in_buffer1);
 
-    I_in_buffer2  :=  to_integer(UNSIGNED(I_in_buffer1));
+    I_in_buffer2  :=  to_integer(signed(I_in_buffer1));
     Natural_out <=  I_in_buffer2 ;
 
   end procedure;
