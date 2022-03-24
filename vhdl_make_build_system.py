@@ -177,9 +177,13 @@ echo "make test bench for \'$1\' in Folder \'$2\' "
 
 mkdir $2
 
+cp {protoBuild}/empty_testbench.xlsm $2/$1.xlsm
+
+
 python3 {vhdl_build_system}/bin_make_test_bench.py  --EntityName $1 --OutputPath $2
 '''.format(
-    vhdl_build_system=vhdl_build_system
+    vhdl_build_system=vhdl_build_system,
+    protoBuild = protoBuild_
         )
 make_bash_file("make_test_bench.sh",make_test_bench)
 
