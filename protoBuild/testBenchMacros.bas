@@ -757,6 +757,7 @@ Sub chooses_test_case()
     referencefile = xreferencefile(0).ChildNodes(0).Text
     simout = get_simulation_out_path_win
     Set fs = CreateObject("Scripting.FileSystemObject")
+    Application.Wait (Now + TimeValue("0:00:02"))
     fs.MoveFile pathtoxmlFile & "\" & referencefile, simout
     sim_in = get_simulation_input_path_win
         
@@ -845,6 +846,8 @@ Sub read_commandlineOutput()
       End If
         
 End Sub
+
+
 
 
 
