@@ -126,8 +126,8 @@ architecture rtl of {EntityName} is
   signal i_data_out :  Word32Array(COLNum_out -1 downto 0) := (others => (others => '0'));
    
 
-  signal data_in  : {reader_record} := {reader_record}_null;
-  signal data_out : {writer_record} := {writer_record}_null;
+  signal data_in  : {reader_record};
+  signal data_out : {writer_record};
   
 begin
   
@@ -321,6 +321,8 @@ entity {EntityName} is
    --
    -- TRIGGER SIGNALS
     TARGET_TB                : in tb_vec_type;
+    EX_TRIGGER_MB            : out std_logic := '0';
+    EX_TRIGGER_SCROD         : out std_logic := '0';
    
    TDC_DONE                 : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ; -- move to readout signals
    TDC_MON_TIMING           : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ;  -- add the ref to the programming of the TX chip
@@ -331,13 +333,13 @@ entity {EntityName} is
     SSTIN_P :  out STD_LOGIC_VECTOR (9 downto 0) := (others => '0')  ;
    
     --- MPPC ADC
-    SCL_MON                  : out STD_LOGIC := '0';
+    SCL_MON                  : out STD_LOGIC  := '0';
     SDA_MON                  : inout STD_LOGIC := '0';
     
-    TDC_CS_DAC               : out std_logic_vector(9 downto 0):= (others => '0') ; 
+    TDC_CS_DAC               : out std_logic_vector(9 downto 0) :=  (others => '0'); 
 
-   TDC_AMUX_S               : out std_logic_vector(3 downto 0):= (others => '0') ; -- what the difference between these two?
-   TOP_AMUX_S               : out std_logic_vector(3 downto 0):= (others => '0')  -- TODO: check schematic
+   TDC_AMUX_S               : out std_logic_vector(3 downto 0) :=  (others => '0'); 
+   TOP_AMUX_S               : out std_logic_vector(3 downto 0) :=  (others => '0')
   );
 end entity;
 
@@ -370,7 +372,7 @@ architecture rtl of {EntityName} is
   signal userRst     : sl;
   signal ethCoreIpAddr  : IpAddrType  := IP_ADDR_DEFAULT_C;
   constant ethCoreIpAddr1 : IpAddrType  := (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"{ip0}");
-  constant udpPort        :  slv(15 downto 0):=  x"07D1" ;  -- {Port}
+  constant udpPort        :  slv(15 downto 0):=  x"{Port}" ;  -- {Port}
 
      
   signal will_clk: std_logic := '0';
@@ -468,7 +470,7 @@ begin
       -- Core settings in 
       macAddr         => ethCoreMacAddr,
       ipAddrs         => (0 => ethCoreIpAddr, 1 => ethCoreIpAddr1),
-      udpPorts        => (0 => x"07D0",       1 => udpPort), --x7D0 = 2000,
+      udpPorts        => (0 => x"{Port}",       1 => udpPort),
       -- User clock inputs
       userClk         => ethClk125,
       userRstIn       => '0',
@@ -499,8 +501,8 @@ begin
     RxDataReady  => userRxDataReadys(0),
 
 
-    globals => globals,
-    TX_DAC_control_out => TX_DAC_control_out
+    globals => globals
+    
   );
   
  
