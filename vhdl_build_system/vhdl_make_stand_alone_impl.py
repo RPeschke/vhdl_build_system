@@ -370,9 +370,10 @@ architecture rtl of {EntityName} is
   signal ethCoreMacAddr : MacAddrType := MAC_ADDR_DEFAULT_C;
      
   signal userRst     : sl;
-  signal ethCoreIpAddr  : IpAddrType  := IP_ADDR_DEFAULT_C;
+  
+  constant ethCoreIpAddr  : IpAddrType  := (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"14");
   constant ethCoreIpAddr1 : IpAddrType  := (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"{ip0}");
-  constant udpPort        :  slv(15 downto 0):=  x"{Port}" ;  -- {Port}
+  constant udpPort        :  slv(15 downto 0):=  x"07D1" ;  -- 2001
 
      
   signal will_clk: std_logic := '0';
@@ -470,7 +471,7 @@ begin
       -- Core settings in 
       macAddr         => ethCoreMacAddr,
       ipAddrs         => (0 => ethCoreIpAddr, 1 => ethCoreIpAddr1),
-      udpPorts        => (0 => x"{Port}",       1 => udpPort),
+      udpPorts        => (0 => udpPort,       1 => udpPort),
       -- User clock inputs
       userClk         => ethClk125,
       userRstIn       => '0',
@@ -595,7 +596,7 @@ end architecture;
     ip2 = ip[2:4].decode("utf-8"),
     ip1 = ip[4:6].decode("utf-8"),
     ip0 = ip[6:8].decode("utf-8"),
-    Port = hex(Port),
+    
     eth_entity = eth_et_name
 )
   header = make_run_on_hardware_header(entityDef)

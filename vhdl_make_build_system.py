@@ -241,7 +241,7 @@ if [ "$3" != "" ]; then
 fi
 
 if [ "$2" != "" ]; then
-    python3 vhdl_build_system/excel_to_csv.py --OutputCSV  {buildpath}/$1/$1.csv  --InputXLS $2 
+    python3 vhdl_build_system/excel_to_csv.py --OutputCSV  {buildpath}/$1/$1.csv  --InputXLS $2 --Drop "clk,globals_clk,globals_rst,globals_reg_address,globals_reg_value,globals_reg_new_value"
 fi
 
 IpAddress="192.168.1.20"
@@ -290,33 +290,31 @@ ssh {RunPcSsh} "cd  {RunPcRemote}/ && cp  $1.csv  $FolderName/$(date '+%Y-%m-{am
 make_bash_file("run_on_hardware.sh",run_on_hardware)
 
 jtag= """#/bin/bash
-#$1 entity Name
+#$1 Bitfile name
+#$2 LAB computer name
 
-echo " {buildpath}/$1/$1.bit"
-ls  {buildpath}/$1/$1.bit
-scp  {buildpath}/$1/$1.bit lab_xilinx:/home/ise//
+lab_pc = mrich 
+if [ "$2" != "" ]; then
+    lab_pc = $2
+fi
+    
 
-echo "setMode -bscan" > commad.cmd
-echo "setCable -port auto" >> commad.cmd
-echo "Identify -inferir"  >> commad.cmd
-echo "identifyMPM"  >> commad.cmd
-echo "assignFile -p 1 -file \"$1.bit\""  >> commad.cmd
-echo "Program -p 1" >> commad.cmd
-echo "quit"  >> commad.cmd
+echo "$1"
+ls  $1
+f="$(basename -- $1)"
+ssh $2 "rm $1"
+scp  $1 $2:/home/$2//
+echo "setMode -bscan"              > commad.cmd
+echo "setCable -port auto"         >> commad.cmd
+echo "Identify -inferir"           >> commad.cmd
+echo "identifyMPM"                 >> commad.cmd
+echo "assignFile -p 1 -file "$f""  >> commad.cmd
+echo "Program -p 1"                >> commad.cmd
+echo "quit"                        >> commad.cmd
 
-scp commad.cmd {jtag_PC}:/home/ise//
-ssh {jtag_PC} "impact -batch commad.cmd"
+scp commad.cmd $2:/home/$2//
+ssh $2 "impact -batch commad.cmd"
 rm commad.cmd
-
-FolderName=$(cat "nextRunFolder.txt")
-newFolder="{RunPcRemote}/$FolderName"
-
-ssh {RunPcSsh} "mkdir $newFolder"
-ssh {RunPcSsh} "echo start > $newFolder/$(date '+%Y-%m-{ampersand}d-%H-%M')_start.txt"
-scp {buildpath}/$1/$1.bit "{RunPcSsh}:$newFolder"
-ssh {RunPcSsh} "mv $newFolder/$1.bit $newFolder/$(date '+%Y-%m-{ampersand}d-%H-%M')_$1.bit"
-scp "{buildpath}/$1/$1_header.txt" "{RunPcSsh}:{RunPcRemote}/"
-echo  $FolderName > currentFolder.txt
 """.format(
         buildpath=args.path,
         RunPcRemote=args.RunPcRemote,

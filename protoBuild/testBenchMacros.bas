@@ -545,6 +545,26 @@ For i = 0 To UBound(sim_out_header_items)
 Next i
 
 End Sub
+Function is_in_drop_list(h1) As Boolean
+ ret = False
+ 
+ If h1 = "clk" Then
+    ret = True
+ ElseIf h1 = "globals_clk" Then
+    ret = True
+ ElseIf h1 = "globals_rst" Then
+    ret = True
+ ElseIf h1 = "globals_reg_address" Then
+    ret = True
+ ElseIf h1 = "globals_reg_value" Then
+     ret = True
+ ElseIf h1 = "globals_reg_new_value" Then
+     ret = True
+ End If
+     
+ 
+ is_in_drop_list = ret
+End Function
 
 
 Sub book1_make_connections()
@@ -553,12 +573,32 @@ Sub book1_make_connections()
   
   max_index = get_nr_of_lines(sim_out_abs)
   
+
  sim_out_header_items = get_sim_out_header
+ skip_column_index = 0
 For i = 0 To UBound(sim_out_header_items)
     r1 = Sheets("Book1").Range("A1:ZZ10234").Cells(2, i + 4).Value
+    h1 = sim_out_header_items(i)
+    If is_in_drop_list(h1) Then
+        skip_column_index = skip_column_index + 1
+    End If
+    
     If (r1 = "out") Then
-    '    =IF(R20C1=0, Simulation_output!R[-2]C[-3],HW_output!R[-3]C[3])
-        Sheets("Book1").Range("D3:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[3])"
+        If (skip_column_index = 0) Then
+            Sheets("Book1").Range("D4:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[3])"
+        ElseIf (skip_column_index = 1) Then
+            Sheets("Book1").Range("D4:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[2])"
+        ElseIf (skip_column_index = 2) Then
+            Sheets("Book1").Range("D4:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[1])"
+        ElseIf (skip_column_index = 3) Then
+            Sheets("Book1").Range("D4:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[0])"
+        ElseIf (skip_column_index = 4) Then
+            Sheets("Book1").Range("D4:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[-1])"
+        ElseIf (skip_column_index = 5) Then
+            Sheets("Book1").Range("D4:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[-2])"
+        ElseIf (skip_column_index = 6) Then
+            Sheets("Book1").Range("D4:D" & max_index + 2).Offset(0, i).FormulaR1C1 = "=if(switch_hw_sim=0, Simulation_output!R[-2]C[-3],HW_output!R[-2]C[-3])"
+        End If
     End If
 Next i
 
@@ -846,6 +886,8 @@ Sub read_commandlineOutput()
       End If
         
 End Sub
+
+
 
 
 
