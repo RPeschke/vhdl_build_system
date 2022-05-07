@@ -1,20 +1,27 @@
 
+import pandas as pd
+from copyreg import pickle
 from .vhdl_db import saveDB, LoadDB
 from .vhdl_parser import vhdl_parse_folder 
 
-from .vhdl_get_dependencies_impl import   find_entity, find_used_entities, find_used_package, find_PacketDef, find_used_components, find_component,make_depency_list
+
 from .generic_helper import save_file, try_make_dir, get_text_between_outtermost
 
 class dependency_db_cl:
     def __init__(self,FileName) -> None:
         self.FileName = FileName
         self.db = LoadDB(FileName,False)
+        self.df = pd.read_pickle(self.FileName + ".pkl")
         if not self.db:
             self.reparse_files()
 
     def reparse_files(self):
         saveDB(self.FileName, LoadDB(self.FileName,True))
-        self.save(vhdl_parse_folder(self.db))
+        database,df =  vhdl_parse_folder(self.db)
+        self.save(database)
+        df.to_pickle(self.FileName + ".pkl")
+        
+        
 
 
     def save(self,db =None):
@@ -61,39 +68,63 @@ class dependency_db_cl:
                             return ret
 
     def entity2FileName(self, entityName):
-        entity =  find_entity(self.db , entityName)
+        entity =  self.df[ (self.df["name"] == entityName) & ( self.df["type"] == "entityDef" )][0]
         return entity
 
 
 
 
     def get_dependencies(self, Entity):
+        def first_diff(x,y):
+            for i in range(min(len(x),len(y))):
+                if x[i] != y[i]:
+                    return i
+                
+            return min(len(x),len(y))
         
-        d = self.db
-        TB_entity = Entity
-        eneties_used ={}
+        
+        df_entity_def = self.df[self.df["type"] == "entityDef"]
+        df_packageDef  = self.df[(self.df["type"] == "packageDef")]
+        
+        df_entities_USED = self.df[(self.df["type"] == "entityUSE")] 
+        df_packageUSE = self.df[(self.df["type"] == "packageUSE")] 
+        df_component_USED = self.df[(self.df["type"] == "ComponentUSE")] 
+        
+        
+        def get_dependencies_recursive(df_used,df_def, df_fileNames):
+            df_new_entities_old = pd.merge(df_used, df_fileNames, on="filename")
+            df_new_entities_new = pd.merge(df_def, df_new_entities_old, how="right", on="name")
+            if len(df_new_entities_new) == 0:
+                return df_new_entities_old[["name"]]
+            df_new_entities_new["first_diff"] = df_new_entities_new.apply(lambda x: first_diff(x["filename_x"],x["filename_y"])  , axis=1) 
+            df_new_entities_new = df_new_entities_new.sort_values("first_diff",ascending=False).drop_duplicates("name")
+            df_new_entities_new["filename"]= df_new_entities_new["filename_x"]
+            return pd.concat([df_new_entities_old, pd.merge(df_used,  df_new_entities_new[["filename"]],  on="filename")]) [["name"]]
+            
+            
+        def get_dependencies_recursive_full(df_used,df_def, df_find_entity_main):
+            df_find_entity = df_find_entity_main
+            new_length1 = len(df_find_entity)
+            old_length1 = 0
+            while new_length1 > old_length1:
+                df_new_entities_new = get_dependencies_recursive(df_used,df_def,  df_find_entity[["filename"]] )
+                df_find_entity = pd.merge(df_def, df_new_entities_new,on="name")
+                df_find_entity.drop_duplicates("filename",inplace=True)
+                old_length1 = new_length1
+                df_find_entity = pd.concat([df_find_entity_main, df_find_entity])
+                new_length1 = len(df_find_entity)
+            
+            df_find_entity.drop_duplicates("filename",inplace=True)     
+            return df_find_entity
+                
+        df_find_entity_main = df_entity_def[df_entity_def["name"] == Entity].iloc[:1]
+        
+        df_find_entity = get_dependencies_recursive_full(df_entities_USED,    df_entity_def, df_find_entity_main)
+        df_find_entity = get_dependencies_recursive_full(df_component_USED,   df_entity_def, df_find_entity)
+        df_find_entity = get_dependencies_recursive_full(df_packageUSE,       df_packageDef, df_find_entity)
+        
       
-        eneties_used[TB_entity] = find_entity(d,TB_entity,".")
-
-        old_length = 0
-        new_length = 1
-        while (new_length > old_length):
-            old_length = new_length
-            eneties_used = make_depency_list(d,eneties_used ,find_used_entities,find_entity)
-            eneties_used = make_depency_list(d,eneties_used ,find_used_package,find_PacketDef)
-            eneties_used = make_depency_list(d,eneties_used ,find_used_components,find_component)
-            new_length = len(eneties_used)
-
-        fileList=list()
-        for k in eneties_used:
-            FileName =eneties_used[k].replace("\\","/") 
-            if FileName not in fileList:
-                fileList.append(FileName)
-            else:
-                print("doublication "+ FileName)
-
-        self.save(d)
-        return fileList   
+        return df_find_entity["filename"].tolist()   
 
             
     def get_dependencies_and_make_project_file(self,Entity,OutputFile=None):

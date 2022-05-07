@@ -73,7 +73,9 @@ def vhdl_get_type_alias(rawText):
 
 def vhdl_get_type_def_enum(rawText):
     ret = {}
-    ret["name"]='unsopported type'
+    ret["name"]=rawText.split("is")[0].strip()
+    ret["vhdl_type"] = "enum"
+    ret["record"] = [ {"name": x.strip(), "type" :"enum_element" , "InOut" :"" ,"default":""} for x in   rawText.split("(")[1].split(")")[0].split(",")]
     return ret
 
 def vhdl_get_type_def_from_string(FileContent):

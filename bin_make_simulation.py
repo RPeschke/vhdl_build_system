@@ -14,7 +14,7 @@ def main():
     if len(sys.argv) > 1:
         Entity = sys.argv[1]
     else:
-        Entity= "trigger_chain_tsim_tb_csv"
+        Entity= "entiy_with_iop_tb_tb_csv"
 
     print('Entity: ' , Entity)
     vhdl_make_simulation(Entity)
