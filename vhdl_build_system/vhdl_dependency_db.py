@@ -1,11 +1,9 @@
 
 import pandas as pd
-from copyreg import pickle
-from .vhdl_db import saveDB, LoadDB
 from .vhdl_parser import vhdl_parse_folder 
 
 
-from .generic_helper import save_file, try_make_dir, get_text_between_outtermost, first_diff_between_strings
+from .generic_helper import save_file, try_make_dir,  first_diff_between_strings
 
 class dependency_db_cl:
     def __init__(self,FileName) -> None:
@@ -18,7 +16,6 @@ class dependency_db_cl:
 
 
     def reparse_files(self):
-        saveDB(self.FileName, LoadDB(self.FileName,True))
         df,df_records =  vhdl_parse_folder()
         df.to_pickle(self.FileName + ".pkl")
         df_records.to_pickle(self.FileName + "_records.pkl")

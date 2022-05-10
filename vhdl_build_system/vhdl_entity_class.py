@@ -5,66 +5,12 @@ from .generic_helper import expand_dataframe
 
 knownName= list()
 
-def expand_types_records(portDef,TypeDef):
-    ret = list()
-    for x in TypeDef['record']:
-        e = {}
-        e['name'] = portDef['name'] + "." + x['name']
-        e['type'] = x['type'] 
-        e['InOut'] =  'in'
-        e['default'] =  None
-        ret.append(e)
 
 
-    return ret
-
-def input_get_constant(numStr):
-    try:
-        i0 = int(numStr)
-    except:
-        for x in knownName:
-            if x["name"] == numStr.strip():
-                i0 = x["value"]
-                return i0
 
 
-        i0 = input("unkown Variable: "+ numStr+"\nplease enter its value:")
-        i0 =input_get_constant(i0)
-        newName = {}
-        newName["name"] = numStr.strip()
-        newName["value"] = i0
-        knownName.append(newName)
-
-    return i0
 
 
-def expand_types_arrays(portDef,TypeDef):
-    ret = list()
-    array_length = TypeDef["array_length"]
-    if "range" in array_length:
-        print("Unbound array")
-
-    sp = array_length.split("downto")
-    if len(sp) == 1:
-         sp = array_length.split("to")
-    i0 = input_get_constant(sp[0])
-    i1 = input_get_constant(sp[1])
-    
-    max_index = max(i0,i1)
-
-    min_index = min(i0,i1)
-
-
-    
-    for x in range(min_index,max_index):
-        e = {}
-        e['name'] = portDef['name'] + "(" + str(x) +")"
-        
-        e['type'] = TypeDef['BaseType']
-        e['InOut'] =  'in'
-        e['default'] =  None
-        ret.append(e)
-    return ret
 
 
 def isPrimitiveType(typeName):

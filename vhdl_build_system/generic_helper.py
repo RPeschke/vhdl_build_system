@@ -8,9 +8,7 @@ def first_diff_between_strings(x,y):
                 
     return min(len(x),len(y))
         
-def remove_doublication_from_list(inList):
-    ret  = list(dict.fromkeys(inList))
-    return ret
+
 
 def try_make_dir(name,isRelativePath=True):
     try:

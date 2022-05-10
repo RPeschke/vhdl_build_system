@@ -1,8 +1,5 @@
 
 
-from  .vhdl_parser                 import vhdl_parser
-
-
 from  .vhdl_make_stand_alone_impl  import make_stand_alone_impl
 
 from  .vhdl_make_test_bench_names  import get_IO_pgk_name, get_writer_record_name, get_reader_record_name, get_reader_entity_name, get_includes, get_writer_entity_name
@@ -19,12 +16,7 @@ class test_bench_maker:
         self.NumberOfRows = int(NumberOfRows)
         self.entetyCl  =  vhdl_entity(self.InputFile)
         dependency_db.get_dependencies(EntityName)
-        ret1 ={
-            "symbols" : [],
-            "records": [],
-            "subtypes" : [],
-        }
-        self.ParsedFile = vhdl_parser(self.InputFile, ret1)
+
         self.OutputPath = OutputPath
         
         self.CSV_in_FileName =  self.OutputPath+"/"+get_test_bench_file_basename(self.entetyCl)+".csv"
@@ -40,8 +32,8 @@ class test_bench_maker:
         
         
         userPackages = "" 
-        for package in self.ParsedFile["packageUSE"]:
-                userPackages += "use work." + package + ".all;\n"
+        for i, x in dependency_db.df[(dependency_db.df.filename ==self.InputFile) & (dependency_db.df["type"] == "packageUSE" )].iterrows():
+                userPackages += "use work." + x["name"] + ".all;\n"
         
         records =""
         records += self.make_IO_record("none")
