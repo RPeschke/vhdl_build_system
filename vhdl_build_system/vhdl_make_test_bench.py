@@ -19,7 +19,12 @@ class test_bench_maker:
         self.NumberOfRows = int(NumberOfRows)
         self.entetyCl  =  vhdl_entity(self.InputFile)
         dependency_db.get_dependencies(EntityName)
-        self.ParsedFile = vhdl_parser(self.InputFile)
+        ret1 ={
+            "symbols" : [],
+            "records": [],
+            "subtypes" : [],
+        }
+        self.ParsedFile = vhdl_parser(self.InputFile, ret1)
         self.OutputPath = OutputPath
         
         self.CSV_in_FileName =  self.OutputPath+"/"+get_test_bench_file_basename(self.entetyCl)+".csv"
@@ -34,7 +39,7 @@ class test_bench_maker:
         write_pgk = get_IO_pgk_name(self.entetyCl)
         
         
-        userPackages = ""
+        userPackages = "" 
         for package in self.ParsedFile["packageUSE"]:
                 userPackages += "use work." + package + ".all;\n"
         
@@ -83,19 +88,19 @@ end package body {write_pgk};
         else :
             IO_record_name =get_reader_record_name(self.entetyCl)
         
-        ports = self.entetyCl.ports(Filter= lambda a : a["InOut"] != inOutFilter)
+        ports = self.entetyCl.ports(Filter= lambda x : x["InOut"] != inOutFilter)
 
         RecordMember = ""
         defaultsstr = ""
         
-        for x in ports:
-            RecordMember += "    " + x["name"] + " : "+ x["type"] +  ";  \n"
+        for i, x in ports.iterrows():
+            RecordMember += "    " + x["port_name"] + " : "+ x["port_type"] +  ";  \n"
         
             
 
         IO_record = '''
 type {IO_record_name} is record
-    {RecordMember}
+{RecordMember}
 end record;
 '''.format(
             IO_record_name=IO_record_name,
@@ -128,7 +133,7 @@ end record;
             else :
                 start = "time  " + delimiter
                 
-            for x in ports:
+            for i,x in ports.iterrows():
                 
                 f.write(start + x["plainName"])
                 start = delimiter
@@ -221,8 +226,8 @@ def make_read_entity(entityDef):
     
     connections=""
     index = 0
-    for x in ports:
-        connections += '  csv_from_integer(csv_r_data(' +str(index) +'), data.' + x["name"] + ');\n'
+    for i,x in ports.iterrows():
+        connections += '  csv_from_integer(csv_r_data(' +str(index) +'), data.' + x["port_name"] + ');\n'
         index+=1 
 
     reader_entity_str = '''
@@ -282,7 +287,7 @@ def make_out_header(entityDef):
 
     HeaderLines=""
     start = ""
-    for x in ports:
+    for i,x in ports.iterrows():
             
         HeaderLines += start + x["plainName"]
         start="; "
@@ -304,8 +309,8 @@ def make_write_entity(entityDef,path="."):
 
     connections=""
     index = 0
-    for x in ports:
-        connections += '  csv_to_integer(data.' + x["name"] + ', data_int(' +str(index) +') );\n'
+    for i, x in ports.iterrows():
+        connections += '  csv_to_integer(data.' + x["port_name"] + ', data_int(' +str(index) +') );\n'
         index+=1 
 
     writer_entity_str='''
@@ -382,13 +387,13 @@ def make_test_bench_for_test_cases(entityDef):
   data_out.{globals}.reg <= data_in.{globals}.reg;
   data_out.{globals}.rst <= data_in.{globals}.rst;
   """.format(
-      globals = clk_port["name"]
+      globals = clk_port.iloc[0]["port_name"]
     )
     
         
-    ports = [x for x in ports if x["type"] != "globals_t"]
-    for x in ports:
-        input2OutputConnection +=  '  data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
+
+    for i,x in ports.iterrows():
+        input2OutputConnection +=  '  data_out.' + x['port_name'] + " <= data_in." + x['port_name'] +";\n"
 
     
     ports = entityDef.ports(RemoveClock = True)
@@ -398,10 +403,10 @@ def make_test_bench_for_test_cases(entityDef):
     if not entityDef.IsUsingGlobals():
         start = "\n  clk => clk,\n  "
     else:
-        start = "\n  " + clk_port["name"] + " => data_out."+ clk_port["name"] +",\n  "
+        start = "\n  " + clk_port.iloc[0]["port_name"] + " => data_out."+ clk_port.iloc[0]["port_name"] +",\n  "
 
-    for x in ports:
-        portsstr += start + x["name"] +" => data_out." + x["name"] 
+    for i,x in ports.iterrows():
+        portsstr += start + x["port_name"] +" => data_out." + x["port_name"] 
         start = ",\n  " 
         
 

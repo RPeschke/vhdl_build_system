@@ -171,9 +171,8 @@ def extract_header_from_top_file(Entity, FileName,BuildFolder):
     print("=======Done Extracting Header From File====")
 
 
-def vhdl_make_simulation(Entity,BuildFolder = "build/",reparse=True):
-    if reparse:
-        dependency_db.reparse_files()
+def vhdl_make_simulation(Entity,BuildFolder = "build/"):
+
     
     fileList = dependency_db.get_dependencies_and_make_project_file(Entity)
     extract_header_from_top_file(Entity, fileList[0],BuildFolder)

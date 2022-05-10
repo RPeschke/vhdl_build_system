@@ -10,15 +10,15 @@ from  .vhdl_make_test_bench_names                 import get_IO_pgk_name, get_re
 
 def make_stand_alone_entity_get_DUT(entityDef):
   ports = entityDef.ports(RemoveClock=True)
-  ports = [x for x in ports if x["type"] != "globals_t"]
+  
   et_name = entityDef.name()
   clock_connect = "clk => globals.clk"
   if entityDef.IsUsingGlobals():
     clock_connect = "globals => globals"
 
   dut = "DUT :  entity work." + et_name + " port map(\n  "+ clock_connect
-  for x in ports:
-    dut += ",\n  " + x["name"] +" => data_out." + x["name"] 
+  for i,x in ports.iterrows():
+    dut += ",\n  " + x["port_name"] +" => data_out." + x["port_name"] 
   dut += "\n);"
   return dut
 
@@ -26,8 +26,8 @@ def make_stand_alone_entity_get_data_out_converter(entityDef):
   data_out_converter = ""
   ports_ex_all = entityDef.ports(RemoveClock=True, ExpandTypes=True)
   index = 0
-  for x in ports_ex_all:
-    data_out_converter += x["type_shorthand"] + '_to_slv(data_out.' + x["name"] + ', i_data_out(' +str(index) +') );\n'
+  for i,x in ports_ex_all.iterrows():
+    data_out_converter += "  " +x["type_shorthand"] + '_to_slv(data_out.' + x["port_name"] + ', i_data_out(' +str(index) +') );\n'
     index+=1 
   return  data_out_converter, len(ports_ex_all)
 
@@ -35,8 +35,8 @@ def make_stand_alone_entity_get_connect_input_output(entityDef):
   ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock=True)
 
   connect_input_output =""
-  for x in ports:
-    connect_input_output += 'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
+  for i,x in ports.iterrows():
+    connect_input_output += '  data_out.' + x['port_name'] + " <= data_in." + x['port_name'] +";\n"
   return connect_input_output
 
 def make_stand_alone_entity_get_data_in_converter(entityDef):
@@ -44,8 +44,8 @@ def make_stand_alone_entity_get_data_in_converter(entityDef):
 
   data_in_converter = ""
   index = 0
-  for x in ports_ex_input:
-    data_in_converter += "slv_to_" + x["type_shorthand"] + '(i_data(' +str(index) +'), data_in.' + x["name"] + ');\n'
+  for i,x in ports_ex_input.iterrows():
+    data_in_converter += "  slv_to_" + x["type_shorthand"] + '(i_data(' +str(index) +'), data_in.' + x["port_name"] + ');\n'
     index+=1 
 
   return data_in_converter, len(ports_ex_input)
@@ -618,7 +618,7 @@ def make_out_header(entityDef):
 
     HeaderLines=""
     start = ""
-    for x in ports:
+    for i,x in ports.iterrows():
             
         HeaderLines += start + x["plainName"]
         start="; "

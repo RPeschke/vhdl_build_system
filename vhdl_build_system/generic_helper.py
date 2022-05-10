@@ -1,7 +1,13 @@
 import os
+import pandas as pd
 
-
-
+def first_diff_between_strings(x,y):
+    for i in range(min(len(x),len(y))):
+        if x[i] != y[i]:
+            return i
+                
+    return min(len(x),len(y))
+        
 def remove_doublication_from_list(inList):
     ret  = list(dict.fromkeys(inList))
     return ret
@@ -59,3 +65,14 @@ def save_file(fileName,Data,newline="\n"):
     Data = Data.replace("\n",newline)
     with open(fileName,"w", newline = "") as f:
         return f.write(Data)                 
+    
+    
+def expand_dataframe(df, axis):
+    dummy_name = "sdadasdasdasdaweqweqewqe"
+    df[dummy_name] =1
+    for key in axis:
+        df1 = pd.DataFrame({key: axis[key]})
+        df1[dummy_name] =1
+        df = df.merge(df1, on = dummy_name)
+    df = df.drop(dummy_name , axis=1)
+    return df       
