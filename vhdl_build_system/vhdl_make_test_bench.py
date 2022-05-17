@@ -7,7 +7,7 @@ from  .vhdl_make_test_bench_names  import get_IO_pgk_name, get_writer_record_nam
 from .vhdl_dependency_db           import dependency_db
 from  .vhdl_entity_class           import vhdl_entity
 from  .vhdl_merge_split_test_cases import merge_test_case
-from .generic_helper               import save_file
+from .generic_helper               import save_file, try_make_dir
 
 
 class test_bench_maker:
@@ -141,7 +141,7 @@ end record;
                     start = str(i) + delimiter
                     
 
-                for x in ports:
+                for  i,x in ports.iterrows():
                     f.write(start + "0")
                     start = delimiter
                     
@@ -183,7 +183,7 @@ end record;
 
       
 def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
-
+    try_make_dir(OutputPath)
     tb_maker = test_bench_maker(EntityName=EntityName,NumberOfRows=NumberOfRows, OutputPath=OutputPath)  
     tb_maker.make_package_file()
     tb_maker.make_entities()

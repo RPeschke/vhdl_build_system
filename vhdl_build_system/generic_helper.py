@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import copy
 
 def first_diff_between_strings(x,y):
     for i in range(min(len(x),len(y))):
@@ -74,3 +75,78 @@ def expand_dataframe(df, axis):
         df = df.merge(df1, on = dummy_name)
     df = df.drop(dummy_name , axis=1)
     return df       
+
+
+
+def get_converter():
+    f_values ={}
+    def connect_prefex_and_name(prefix, name):
+        return prefix + "." +name if prefix != "" else name
+    
+    def process_dict_values(ret, dic, prefix =""):
+        for k in dic.keys():
+            process_values(ret, dic[k],connect_prefex_and_name(prefix , k) )
+            
+    def process_list_values(ret, x, prefix =""):
+        ret_1 =  copy.deepcopy(ret)
+        pr = connect_prefex_and_name(prefix , "list")
+        pr_type = connect_prefex_and_name(prefix , "type")
+        for i,elem in enumerate(x):
+            if i == 0:
+                ret[-1][pr_type ] = type(elem).__name__
+                
+                process_values(ret, elem, pr )
+            else:
+                ret_copy = copy.deepcopy(ret_1)
+                ret_copy = ret_copy[-2:]
+                ret_copy[-1][pr_type] = type(elem).__name__
+                process_values(ret_copy, elem, pr )
+                ret.extend(ret_copy)
+                
+    def process_int_values(ret, x, prefix =""):
+        ret[-1][prefix] = x 
+
+    def process_str_values(ret, x, prefix =""):
+        ret[-1][prefix] = x             
+            
+    f_values["dict"]  = process_dict_values
+    f_values["int"]  = process_int_values
+    f_values["str"]  = process_str_values
+    f_values["list"]  = process_list_values
+    return f_values
+
+
+f_values = get_converter()
+def process_values(ret, x, prefix =""):
+    
+    try:
+        return f_values[type(x).__name__ ] (ret, x,prefix)
+    except:
+        return process_values(ret, x.__dict__,prefix)
+    
+    
+def to_dataframe(data):
+    def try_get(dic, key):
+        try:
+            return dic[key]
+        except:
+            return None        
+    ret = [{}]   
+    process_values(ret, data)
+    columns = []
+    for x in ret:
+        for key in x.keys():
+            if key not in columns:
+                columns.append(key)
+                
+    print(columns)        
+
+    data = []
+    for x in ret:
+        data1 = []
+        for c in columns:
+            data1.append(try_get(x, c ))
+        data.append(data1)
+            
+    df = pd.DataFrame(data, columns=columns)    
+    return df
