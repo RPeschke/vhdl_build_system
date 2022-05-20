@@ -26,19 +26,29 @@ class dependency_db_cl:
         return entity
 
     def get_dependencies(self, Entity):
-        df_entity_def = self.df[self.df["type"] == "entityDef"]
-        df_packageDef  = self.df[(self.df["type"] == "packageDef")]
+        df = self.df
+        df = df[df["filename"].apply( lambda  x: ".vhd" in x) == True]
+        df_entity_def = df[df["type"] == "entityDef"]
+        df_packageDef  = df[(df["type"] == "packageDef")]
         
-        df_entities_USED = self.df[(self.df["type"] == "entityUSE")] 
-        df_packageUSE = self.df[(self.df["type"] == "packageUSE")] 
-        df_component_USED = self.df[(self.df["type"] == "ComponentUSE")] 
+        df_entities_USED = df[(df["type"] == "entityUSE")] 
+        df_packageUSE = df[(df["type"] == "packageUSE")] 
+        df_component_USED = df[(df["type"] == "ComponentUSE")] 
         
         
         def get_dependencies_recursive(df_used,df_def, df_fileNames):
             df_new_entities_old = pd.merge(df_used, df_fileNames, on="filename")
             df_new_entities_new = pd.merge(df_def, df_new_entities_old, how="right", on="name")
+            if len(df_new_entities_new[df_new_entities_new.filename_x.isna()].name):
+                print("unable to find entity:")
+                print(df_new_entities_new[df_new_entities_new.filename_x.isna()].name)
+                
+            df_new_entities_new = df_new_entities_new[~df_new_entities_new.filename_x.isna()]
+            
             if len(df_new_entities_new) == 0:
                 return df_new_entities_old[["name"]]
+            
+            
             df_new_entities_new["first_diff"] = df_new_entities_new.apply(lambda x: first_diff_between_strings(x["filename_x"],x["filename_y"])  , axis=1) 
             df_new_entities_new = df_new_entities_new.sort_values("first_diff",ascending=False).drop_duplicates("name")
             df_new_entities_new["filename"]= df_new_entities_new["filename_x"]
