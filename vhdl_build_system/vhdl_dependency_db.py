@@ -68,6 +68,7 @@ class dependency_db_cl:
                 new_length1 = len(df_find_entity)
             
             df_find_entity.drop_duplicates("filename",inplace=True)     
+            df_find_entity.drop_duplicates("name",inplace=True) 
             return df_find_entity
                 
         df_find_entity_main = df_entity_def[df_entity_def["name"] == Entity].iloc[:1]
