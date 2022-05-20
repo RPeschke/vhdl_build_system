@@ -81,11 +81,11 @@ class dependency_db_cl:
         return self.filelist
 
             
-    def get_dependencies_and_make_project_file(self,Entity,OutputFile=None):
+    def get_dependencies_and_make_project_file(self,Entity):
         fileList = self.get_dependencies(Entity)
-        if not OutputFile:
-            OutputFile =  "build/" +Entity+"/"+Entity+".prj"
-            outPath = "build/" +Entity
+        
+        OutputFile =  "build/" +Entity+"/"+Entity+".prj"
+        outPath = "build/" +Entity
         
         try_make_dir(outPath)
          
