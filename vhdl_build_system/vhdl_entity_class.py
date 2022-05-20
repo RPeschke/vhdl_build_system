@@ -160,6 +160,7 @@ class vhdl_entity:
     def ports(self,RemoveClock=False,ExpandTypes=False, Filter = None):
         ports = self.df_entity
         ports = remove_clock_from_ports(ports)  
+        ports = ports[ports["generic_or_port"] == "port"]
         if not RemoveClock:
             clk = self.get_clock_port()
             ports = pd.concat( [clk, ports])
