@@ -36,6 +36,7 @@ class test_bench_maker:
                 userPackages += "use work." + x["name"] + ".all;\n"
         
         records =""
+        records += self.make_generic_constants()
         records += self.make_IO_record("none")
         records +="\n\n"
         records += self.make_IO_record("out")
@@ -74,6 +75,15 @@ end package body {write_pgk};
 
         return write_pgk
 
+    def make_generic_constants(self):
+        df = self.entetyCl.df_entity[self.entetyCl.df_entity.generic_or_port == "generic"]
+        ret = ""
+        for i in range(len(df)):
+            ret += "  constant " + df.iloc[i]["port_name"] + " : " + df.iloc[i]["port_type"] + " := " + df.iloc[i]["default"]  +';\n'
+        
+        return ret
+        
+        
     def make_IO_record(self,inOutFilter):
         if inOutFilter == "none":
             IO_record_name = get_writer_record_name(self.entetyCl)
@@ -362,14 +372,23 @@ def get_test_bench_file_basename(entityDef):
     tb_entity =  et_name +"_tb_csv"     
     return tb_entity
 
+def make_generic_str(df_entity):        
+    df_generics = df_entity[df_entity.generic_or_port == "generic"]
+        
+    start = "  " 
+    generic_str = ""
+    for i,x in df_generics.iterrows():
+        generic_str += start + x["port_name"] + " => " + x["port_name"] 
+        start = ", \n  "
+            
+    if generic_str:
+        generic_str = "\n  generic map(\n    " + generic_str +"\n  )" 
+    
+    return generic_str
 
-def make_test_bench_for_test_cases(entityDef):
-    et_name = entityDef.name()
 
-    tb_entity = get_test_bench_file_basename(entityDef)
-    write_pgk = get_IO_pgk_name(entityDef)
-
-
+def make_input2OutputConnection(entityDef):
+    
     ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock = True)
     clk_port = entityDef.get_clock_port()
     input2OutputConnection = "  data_out.clk <=clk;\n"
@@ -386,8 +405,11 @@ def make_test_bench_for_test_cases(entityDef):
 
     for i,x in ports.iterrows():
         input2OutputConnection +=  '  data_out.' + x['port_name'] + " <= data_in." + x['port_name'] +";\n"
-
     
+    return input2OutputConnection
+
+def make_port_str(entityDef):
+    clk_port = entityDef.get_clock_port()
     ports = entityDef.ports(RemoveClock = True)
     
     portsstr = ""
@@ -401,7 +423,19 @@ def make_test_bench_for_test_cases(entityDef):
         portsstr += start + x["port_name"] +" => data_out." + x["port_name"] 
         start = ",\n  " 
         
+    return portsstr
+        
+    
+def make_test_bench_for_test_cases(entityDef):
+    et_name = entityDef.name()
 
+    tb_entity = get_test_bench_file_basename(entityDef)
+    write_pgk = get_IO_pgk_name(entityDef)
+    
+    input2OutputConnection = make_input2OutputConnection(entityDef)
+    portsstr =make_port_str(entityDef)
+    generic_str = make_generic_str(entityDef.df_entity)        
+    
     testBenchStr = '''
 {includes}
 use work.{write_pgk}.all;
@@ -435,7 +469,7 @@ begin
 
 {input2OutputConnection}
 
-DUT :  entity work.{et_name}  port map(
+DUT :  entity work.{et_name} {generic_str} port map(
 {ports}
     );
 
@@ -451,7 +485,8 @@ end behavior;
   reader_entity_name=get_reader_entity_name(entityDef),
   writer_entity_name= get_writer_entity_name(entityDef),
   input2OutputConnection=input2OutputConnection,
-  ports=portsstr
+  ports=portsstr,
+  generic_str = generic_str
     )
 
 
