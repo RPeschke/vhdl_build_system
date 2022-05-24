@@ -113,8 +113,11 @@ end procedure;
 
   end procedure;
 
-  procedure integer_to_slv(signal I_in : in integer; signal SLV_out : out STD_LOGIC_VECTOR) is begin
-    SLV_out<= std_logic_vector(to_signed(I_in, SLV_out'length));
+  procedure integer_to_slv(signal I_in : in integer; signal SLV_out : out STD_LOGIC_VECTOR) is 
+  variable temp : std_logic_vector(127 downto 0);
+  begin
+    temp:= std_logic_vector(to_signed(I_in, temp'length));
+    SLV_out<= temp(SLV_out'range);
   end procedure;
 
   procedure integer_to_slv_var(signal I_in : in integer; SLV_out : out STD_LOGIC_VECTOR) is begin
