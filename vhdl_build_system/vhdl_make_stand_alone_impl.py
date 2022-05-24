@@ -10,15 +10,15 @@ from  .vhdl_make_test_bench_names                 import get_IO_pgk_name, get_re
 
 def make_stand_alone_entity_get_DUT(entityDef):
   ports = entityDef.ports(RemoveClock=True)
-  ports = [x for x in ports if x["type"] != "globals_t"]
+  
   et_name = entityDef.name()
   clock_connect = "clk => globals.clk"
   if entityDef.IsUsingGlobals():
     clock_connect = "globals => globals"
 
   dut = "DUT :  entity work." + et_name + " port map(\n  "+ clock_connect
-  for x in ports:
-    dut += ",\n  " + x["name"] +" => data_out." + x["name"] 
+  for i,x in ports.iterrows():
+    dut += ",\n  " + x["port_name"] +" => data_out." + x["port_name"] 
   dut += "\n);"
   return dut
 
@@ -26,8 +26,8 @@ def make_stand_alone_entity_get_data_out_converter(entityDef):
   data_out_converter = ""
   ports_ex_all = entityDef.ports(RemoveClock=True, ExpandTypes=True)
   index = 0
-  for x in ports_ex_all:
-    data_out_converter += x["type_shorthand"] + '_to_slv(data_out.' + x["name"] + ', i_data_out(' +str(index) +') );\n'
+  for i,x in ports_ex_all.iterrows():
+    data_out_converter += "  " +x["type_shorthand"] + '_to_slv(data_out.' + x["port_name"] + ', i_data_out(' +str(index) +') );\n'
     index+=1 
   return  data_out_converter, len(ports_ex_all)
 
@@ -35,8 +35,8 @@ def make_stand_alone_entity_get_connect_input_output(entityDef):
   ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock=True)
 
   connect_input_output =""
-  for x in ports:
-    connect_input_output += 'data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
+  for i,x in ports.iterrows():
+    connect_input_output += '  data_out.' + x['port_name'] + " <= data_in." + x['port_name'] +";\n"
   return connect_input_output
 
 def make_stand_alone_entity_get_data_in_converter(entityDef):
@@ -44,8 +44,8 @@ def make_stand_alone_entity_get_data_in_converter(entityDef):
 
   data_in_converter = ""
   index = 0
-  for x in ports_ex_input:
-    data_in_converter += "slv_to_" + x["type_shorthand"] + '(i_data(' +str(index) +'), data_in.' + x["name"] + ');\n'
+  for i,x in ports_ex_input.iterrows():
+    data_in_converter += "  slv_to_" + x["type_shorthand"] + '(i_data(' +str(index) +'), data_in.' + x["port_name"] + ');\n'
     index+=1 
 
   return data_in_converter, len(ports_ex_input)
@@ -126,8 +126,8 @@ architecture rtl of {EntityName} is
   signal i_data_out :  Word32Array(COLNum_out -1 downto 0) := (others => (others => '0'));
    
 
-  signal data_in  : {reader_record} := {reader_record}_null;
-  signal data_out : {writer_record} := {writer_record}_null;
+  signal data_in  : {reader_record};
+  signal data_out : {writer_record};
   
 begin
   
@@ -321,6 +321,8 @@ entity {EntityName} is
    --
    -- TRIGGER SIGNALS
     TARGET_TB                : in tb_vec_type;
+    EX_TRIGGER_MB            : out std_logic := '0';
+    EX_TRIGGER_SCROD         : out std_logic := '0';
    
    TDC_DONE                 : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ; -- move to readout signals
    TDC_MON_TIMING           : in STD_LOGIC_VECTOR(9 downto 0) := (others => '0')  ;  -- add the ref to the programming of the TX chip
@@ -331,13 +333,13 @@ entity {EntityName} is
     SSTIN_P :  out STD_LOGIC_VECTOR (9 downto 0) := (others => '0')  ;
    
     --- MPPC ADC
-    SCL_MON                  : out STD_LOGIC := '0';
+    SCL_MON                  : out STD_LOGIC  := '0';
     SDA_MON                  : inout STD_LOGIC := '0';
     
-    TDC_CS_DAC               : out std_logic_vector(9 downto 0):= (others => '0') ; 
+    TDC_CS_DAC               : out std_logic_vector(9 downto 0) :=  (others => '0'); 
 
-   TDC_AMUX_S               : out std_logic_vector(3 downto 0):= (others => '0') ; -- what the difference between these two?
-   TOP_AMUX_S               : out std_logic_vector(3 downto 0):= (others => '0')  -- TODO: check schematic
+   TDC_AMUX_S               : out std_logic_vector(3 downto 0) :=  (others => '0'); 
+   TOP_AMUX_S               : out std_logic_vector(3 downto 0) :=  (others => '0')
   );
 end entity;
 
@@ -368,9 +370,10 @@ architecture rtl of {EntityName} is
   signal ethCoreMacAddr : MacAddrType := MAC_ADDR_DEFAULT_C;
      
   signal userRst     : sl;
-  signal ethCoreIpAddr  : IpAddrType  := IP_ADDR_DEFAULT_C;
+  
+  constant ethCoreIpAddr  : IpAddrType  := (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"14");
   constant ethCoreIpAddr1 : IpAddrType  := (3 => x"{ip3}", 2 => x"{ip2}", 1 => x"{ip1}", 0 => x"{ip0}");
-  constant udpPort        :  slv(15 downto 0):=  x"07D1" ;  -- {Port}
+  constant udpPort        :  slv(15 downto 0):=  x"07D1" ;  -- 2001
 
      
   signal will_clk: std_logic := '0';
@@ -468,7 +471,7 @@ begin
       -- Core settings in 
       macAddr         => ethCoreMacAddr,
       ipAddrs         => (0 => ethCoreIpAddr, 1 => ethCoreIpAddr1),
-      udpPorts        => (0 => x"07D0",       1 => udpPort), --x7D0 = 2000,
+      udpPorts        => (0 => udpPort,       1 => udpPort),
       -- User clock inputs
       userClk         => ethClk125,
       userRstIn       => '0',
@@ -499,8 +502,8 @@ begin
     RxDataReady  => userRxDataReadys(0),
 
 
-    globals => globals,
-    TX_DAC_control_out => TX_DAC_control_out
+    globals => globals
+    
   );
   
  
@@ -593,7 +596,7 @@ end architecture;
     ip2 = ip[2:4].decode("utf-8"),
     ip1 = ip[4:6].decode("utf-8"),
     ip0 = ip[6:8].decode("utf-8"),
-    Port = hex(Port),
+    
     eth_entity = eth_et_name
 )
   header = make_run_on_hardware_header(entityDef)
@@ -615,7 +618,7 @@ def make_out_header(entityDef):
 
     HeaderLines=""
     start = ""
-    for x in ports:
+    for i,x in ports.iterrows():
             
         HeaderLines += start + x["plainName"]
         start="; "

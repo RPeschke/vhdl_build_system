@@ -1,109 +1,91 @@
 
-from .vhdl_db import saveDB, LoadDB
+import pandas as pd
 from .vhdl_parser import vhdl_parse_folder 
 
-from .vhdl_get_dependencies_impl import   find_entity, find_used_entities, find_used_package, find_PacketDef, find_used_components, find_component,make_depency_list
-from .generic_helper import save_file, try_make_dir, get_text_between_outtermost
+
+from .generic_helper import save_file, try_make_dir,  first_diff_between_strings
 
 class dependency_db_cl:
     def __init__(self,FileName) -> None:
+        
         self.FileName = FileName
-        self.db = LoadDB(FileName,False)
-        if not self.db:
-            self.reparse_files()
+        self.filelist =[]
+        self.reparse_files()
+        self.df = pd.read_pickle(self.FileName + ".pkl")
+        self.df_records = pd.read_pickle(self.FileName + "_records.pkl")
+
 
     def reparse_files(self):
-        saveDB(self.FileName, LoadDB(self.FileName,True))
-        self.save(vhdl_parse_folder(self.db))
+        df,df_records =  vhdl_parse_folder()
+        df.to_pickle(self.FileName + ".pkl")
+        df_records.to_pickle(self.FileName + "_records.pkl")
 
-
-    def save(self,db =None):
-        if db:
-            self.db = db
-        
-        saveDB(self.FileName, self.db)
-        
-    def get_package_for_type(self, name):
-        n_sp = name.split("(")
-        plainName = n_sp[0].strip()
-        if len(n_sp) >1:
-            print(n_sp[0],"is array type")
-
-        for k in self.db.keys():
-            t = self.db[k]["Type_Def_detail"]
-            e = self.db[k]["entityDef"]
-            if not e:
-                for t1 in t:
-                    if t1["name"] == plainName:
-                        return self.db[k]
-                           
-    def get_type_from_name(self, name):
-        n_sp = name.split("(")
-        plainName = n_sp[0].strip()
-
-        for k in self.db.keys():
-            t = self.db[k]["Type_Def_detail"]
-            e = self.db[k]["entityDef"]
-            if not e:
-                for t1 in t:
-                    if t1["name"] == plainName:
-                        if len(n_sp) == 1:
-                            return t1
-                        else:
-                            #unbound array type 
-                            base = self.get_type_from_name(plainName)
-                            ret = {
-                                "name"    : plainName,
-                                "BaseType": base["BaseType"],
-                                "array_length" : get_text_between_outtermost(name,'(',')'),
-                                "vhdl_type"    :  "array"
-                            }
-                            return ret
 
     def entity2FileName(self, entityName):
-        entity =  find_entity(self.db , entityName)
+        entity =  self.df[ (self.df["name"] == entityName.lower()) & ( self.df["type"] == "entityDef" )]["filename"].iloc[0]
         return entity
 
-
-
-
     def get_dependencies(self, Entity):
+        df = self.df
+        df = df[df["filename"].apply( lambda  x: ".vhd" in x) == True]
+        df_entity_def = df[df["type"] == "entityDef"]
+        df_packageDef  = df[(df["type"] == "packageDef")]
         
-        d = self.db
-        TB_entity = Entity
-        eneties_used ={}
-      
-        eneties_used[TB_entity] = find_entity(d,TB_entity,".")
-
-        old_length = 0
-        new_length = 1
-        while (new_length > old_length):
-            old_length = new_length
-            eneties_used = make_depency_list(d,eneties_used ,find_used_entities,find_entity)
-            eneties_used = make_depency_list(d,eneties_used ,find_used_package,find_PacketDef)
-            eneties_used = make_depency_list(d,eneties_used ,find_used_components,find_component)
-            new_length = len(eneties_used)
-
-        fileList=list()
-        for k in eneties_used:
-            FileName =eneties_used[k].replace("\\","/") 
-            if FileName not in fileList:
-                fileList.append(FileName)
-            else:
-                print("doublication "+ FileName)
-
-        self.save(d)
-        return fileList   
+        df_entities_USED = df[(df["type"] == "entityUSE")] 
+        df_packageUSE = df[(df["type"] == "packageUSE")] 
+        df_component_USED = df[(df["type"] == "ComponentUSE")] 
+        
+        
+        def get_dependencies_recursive(df_used,df_def, df_fileNames):
+            df_new_entities_old = pd.merge(df_used, df_fileNames, on="filename")
+            df_new_entities_new = pd.merge(df_def, df_new_entities_old, how="right", on="name")
+            if len(df_new_entities_new[df_new_entities_new.filename_x.isna()].name):
+                print("unable to find entity:")
+                print(df_new_entities_new[df_new_entities_new.filename_x.isna()].name)
+                
+            df_new_entities_new = df_new_entities_new[~df_new_entities_new.filename_x.isna()]
+            
+            if len(df_new_entities_new) == 0:
+                return df_new_entities_old[["name"]]
+            
+            
+            df_new_entities_new["first_diff"] = df_new_entities_new.apply(lambda x: first_diff_between_strings(x["filename_x"],x["filename_y"])  , axis=1) 
+            df_new_entities_new = df_new_entities_new.sort_values("first_diff",ascending=False).drop_duplicates("name")
+            df_new_entities_new["filename"]= df_new_entities_new["filename_x"]
+            return pd.concat([df_new_entities_old, pd.merge(df_used,  df_new_entities_new[["filename"]],  on="filename")]) [["name"]]
+            
+            
+        def get_dependencies_recursive_full(df_used,df_def, df_find_entity_main):
+            df_find_entity = df_find_entity_main
+            new_length1 = len(df_find_entity)
+            old_length1 = 0
+            while new_length1 > old_length1:
+                df_new_entities_new = get_dependencies_recursive(df_used,df_def,  df_find_entity[["filename"]] )
+                df_find_entity = pd.merge(df_def, df_new_entities_new,on="name")
+                df_find_entity.drop_duplicates("filename",inplace=True)
+                old_length1 = new_length1
+                df_find_entity = pd.concat([df_find_entity_main, df_find_entity])
+                new_length1 = len(df_find_entity)
+            
+            df_find_entity.drop_duplicates("filename",inplace=True)     
+            df_find_entity.drop_duplicates("name",inplace=True) 
+            return df_find_entity
+                
+        df_find_entity_main = df_entity_def[df_entity_def["name"] == Entity].iloc[:1]
+        
+        df_find_entity = get_dependencies_recursive_full(df_entities_USED,    df_entity_def, df_find_entity_main)
+        df_find_entity = get_dependencies_recursive_full(df_component_USED,   df_entity_def, df_find_entity)
+        df_find_entity = get_dependencies_recursive_full(df_packageUSE,       df_packageDef, df_find_entity)
+        
+        self.filelist = df_find_entity["filename"].tolist()   
+        return self.filelist
 
             
-    def get_dependencies_and_make_project_file(self,Entity,OutputFile=None):
-        
-        
+    def get_dependencies_and_make_project_file(self,Entity):
         fileList = self.get_dependencies(Entity)
         
-        if not OutputFile:
-            OutputFile =  "build/" +Entity+"/"+Entity+".prj"
-            outPath = "build/" +Entity
+        OutputFile =  "build/" +Entity+"/"+Entity+".prj"
+        outPath = "build/" +Entity
         
         try_make_dir(outPath)
          
@@ -111,7 +93,7 @@ class dependency_db_cl:
         for k in fileList:
             lines += 'vhdl work "../../' + k + '"\n'
         save_file(OutputFile, lines)
-        
+        self.filelist  = fileList
         return fileList
 
 

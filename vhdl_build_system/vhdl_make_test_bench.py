@@ -1,8 +1,5 @@
 
 
-from  .vhdl_parser                 import vhdl_parser
-
-
 from  .vhdl_make_stand_alone_impl  import make_stand_alone_impl
 
 from  .vhdl_make_test_bench_names  import get_IO_pgk_name, get_writer_record_name, get_reader_record_name, get_reader_entity_name, get_includes, get_writer_entity_name
@@ -10,7 +7,7 @@ from  .vhdl_make_test_bench_names  import get_IO_pgk_name, get_writer_record_nam
 from .vhdl_dependency_db           import dependency_db
 from  .vhdl_entity_class           import vhdl_entity
 from  .vhdl_merge_split_test_cases import merge_test_case
-from .generic_helper               import save_file
+from .generic_helper               import save_file, try_make_dir
 
 
 class test_bench_maker:
@@ -19,7 +16,7 @@ class test_bench_maker:
         self.NumberOfRows = int(NumberOfRows)
         self.entetyCl  =  vhdl_entity(self.InputFile)
         dependency_db.get_dependencies(EntityName)
-        self.ParsedFile = vhdl_parser(self.InputFile)
+
         self.OutputPath = OutputPath
         
         self.CSV_in_FileName =  self.OutputPath+"/"+get_test_bench_file_basename(self.entetyCl)+".csv"
@@ -34,11 +31,12 @@ class test_bench_maker:
         write_pgk = get_IO_pgk_name(self.entetyCl)
         
         
-        userPackages = ""
-        for package in self.ParsedFile["packageUSE"]:
-                userPackages += "use work." + package + ".all;\n"
+        userPackages = "" 
+        for i, x in dependency_db.df[(dependency_db.df.filename ==self.InputFile) & (dependency_db.df["type"] == "packageUSE" )].iterrows():
+                userPackages += "use work." + x["name"] + ".all;\n"
         
         records =""
+        records += self.make_generic_constants()
         records += self.make_IO_record("none")
         records +="\n\n"
         records += self.make_IO_record("out")
@@ -77,25 +75,34 @@ end package body {write_pgk};
 
         return write_pgk
 
+    def make_generic_constants(self):
+        df = self.entetyCl.df_entity[self.entetyCl.df_entity.generic_or_port == "generic"]
+        ret = ""
+        for i in range(len(df)):
+            ret += "  constant " + df.iloc[i]["port_name"] + " : " + df.iloc[i]["port_type"] + " := " + df.iloc[i]["default"]  +';\n'
+        
+        return ret
+        
+        
     def make_IO_record(self,inOutFilter):
         if inOutFilter == "none":
             IO_record_name = get_writer_record_name(self.entetyCl)
         else :
             IO_record_name =get_reader_record_name(self.entetyCl)
         
-        ports = self.entetyCl.ports(Filter= lambda a : a["InOut"] != inOutFilter)
+        ports = self.entetyCl.ports(Filter= lambda x : x["InOut"] != inOutFilter)
 
         RecordMember = ""
         defaultsstr = ""
         
-        for x in ports:
-            RecordMember += "    " + x["name"] + " : "+ x["type"] +  ";  \n"
+        for i, x in ports.iterrows():
+            RecordMember += "    " + x["port_name"] + " : "+ x["port_type"] +  ";  \n"
         
             
 
         IO_record = '''
 type {IO_record_name} is record
-    {RecordMember}
+{RecordMember}
 end record;
 '''.format(
             IO_record_name=IO_record_name,
@@ -128,7 +135,7 @@ end record;
             else :
                 start = "time  " + delimiter
                 
-            for x in ports:
+            for i,x in ports.iterrows():
                 
                 f.write(start + x["plainName"])
                 start = delimiter
@@ -144,7 +151,7 @@ end record;
                     start = str(i) + delimiter
                     
 
-                for x in ports:
+                for  i,x in ports.iterrows():
                     f.write(start + "0")
                     start = delimiter
                     
@@ -186,7 +193,7 @@ end record;
 
       
 def make_test_bench_main(EntityName,NumberOfRows,OutputPath):
-
+    try_make_dir(OutputPath)
     tb_maker = test_bench_maker(EntityName=EntityName,NumberOfRows=NumberOfRows, OutputPath=OutputPath)  
     tb_maker.make_package_file()
     tb_maker.make_entities()
@@ -221,8 +228,8 @@ def make_read_entity(entityDef):
     
     connections=""
     index = 0
-    for x in ports:
-        connections += '  csv_from_integer(csv_r_data(' +str(index) +'), data.' + x["name"] + ');\n'
+    for i,x in ports.iterrows():
+        connections += '  csv_from_integer(csv_r_data(' +str(index) +'), data.' + x["port_name"] + ');\n'
         index+=1 
 
     reader_entity_str = '''
@@ -282,7 +289,7 @@ def make_out_header(entityDef):
 
     HeaderLines=""
     start = ""
-    for x in ports:
+    for i,x in ports.iterrows():
             
         HeaderLines += start + x["plainName"]
         start="; "
@@ -304,8 +311,8 @@ def make_write_entity(entityDef,path="."):
 
     connections=""
     index = 0
-    for x in ports:
-        connections += '  csv_to_integer(data.' + x["name"] + ', data_int(' +str(index) +') );\n'
+    for i, x in ports.iterrows():
+        connections += '  csv_to_integer(data.' + x["port_name"] + ', data_int(' +str(index) +') );\n'
         index+=1 
 
     writer_entity_str='''
@@ -365,14 +372,23 @@ def get_test_bench_file_basename(entityDef):
     tb_entity =  et_name +"_tb_csv"     
     return tb_entity
 
+def make_generic_str(df_entity):        
+    df_generics = df_entity[df_entity.generic_or_port == "generic"]
+        
+    start = "  " 
+    generic_str = ""
+    for i,x in df_generics.iterrows():
+        generic_str += start + x["port_name"] + " => " + x["port_name"] 
+        start = ", \n  "
+            
+    if generic_str:
+        generic_str = "\n  generic map(\n    " + generic_str +"\n  )" 
+    
+    return generic_str
 
-def make_test_bench_for_test_cases(entityDef):
-    et_name = entityDef.name()
 
-    tb_entity = get_test_bench_file_basename(entityDef)
-    write_pgk = get_IO_pgk_name(entityDef)
-
-
+def make_input2OutputConnection(entityDef):
+    
     ports = entityDef.ports(Filter= lambda a : a["InOut"] == "in", RemoveClock = True)
     clk_port = entityDef.get_clock_port()
     input2OutputConnection = "  data_out.clk <=clk;\n"
@@ -382,15 +398,18 @@ def make_test_bench_for_test_cases(entityDef):
   data_out.{globals}.reg <= data_in.{globals}.reg;
   data_out.{globals}.rst <= data_in.{globals}.rst;
   """.format(
-      globals = clk_port["name"]
+      globals = clk_port.iloc[0]["port_name"]
     )
     
         
-    ports = [x for x in ports if x["type"] != "globals_t"]
-    for x in ports:
-        input2OutputConnection +=  '  data_out.' + x['name'] + " <= data_in." + x['name'] +";\n"
 
+    for i,x in ports.iterrows():
+        input2OutputConnection +=  '  data_out.' + x['port_name'] + " <= data_in." + x['port_name'] +";\n"
     
+    return input2OutputConnection
+
+def make_port_str(entityDef):
+    clk_port = entityDef.get_clock_port()
     ports = entityDef.ports(RemoveClock = True)
     
     portsstr = ""
@@ -398,13 +417,25 @@ def make_test_bench_for_test_cases(entityDef):
     if not entityDef.IsUsingGlobals():
         start = "\n  clk => clk,\n  "
     else:
-        start = "\n  " + clk_port["name"] + " => data_out."+ clk_port["name"] +",\n  "
+        start = "\n  " + clk_port.iloc[0]["port_name"] + " => data_out."+ clk_port.iloc[0]["port_name"] +",\n  "
 
-    for x in ports:
-        portsstr += start + x["name"] +" => data_out." + x["name"] 
+    for i,x in ports.iterrows():
+        portsstr += start + x["port_name"] +" => data_out." + x["port_name"] 
         start = ",\n  " 
         
+    return portsstr
+        
+    
+def make_test_bench_for_test_cases(entityDef):
+    et_name = entityDef.name()
 
+    tb_entity = get_test_bench_file_basename(entityDef)
+    write_pgk = get_IO_pgk_name(entityDef)
+    
+    input2OutputConnection = make_input2OutputConnection(entityDef)
+    portsstr =make_port_str(entityDef)
+    generic_str = make_generic_str(entityDef.df_entity)        
+    
     testBenchStr = '''
 {includes}
 use work.{write_pgk}.all;
@@ -438,7 +469,7 @@ begin
 
 {input2OutputConnection}
 
-DUT :  entity work.{et_name}  port map(
+DUT :  entity work.{et_name} {generic_str} port map(
 {ports}
     );
 
@@ -454,7 +485,8 @@ end behavior;
   reader_entity_name=get_reader_entity_name(entityDef),
   writer_entity_name= get_writer_entity_name(entityDef),
   input2OutputConnection=input2OutputConnection,
-  ports=portsstr
+  ports=portsstr,
+  generic_str = generic_str
     )
 
 

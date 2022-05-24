@@ -9,7 +9,6 @@ from vhdl_build_system.vhdl_build_system.vhdl_merge_split_test_cases import merg
 
 
 def main():
-    print("sdasd")
     parser = argparse.ArgumentParser(description='Creates Test benches for a given entity')
     parser.add_argument('--InputTestCase', help='Path to the Test Case File',default="C:/Users/Richa/Documents/github/klm_trig_tests/tests/track_finder_intersector_legacy/Standard_input.testcase.xml")
     parser.add_argument('--ExcelFile', help='Path to the input Excel File',default="C:/Users/Richa/Documents/github/klm_trig_tests/tests/track_finder_intersector_legacy/track_finder_intersector_legacy.xlsm")
@@ -22,9 +21,6 @@ def main():
     else:
         merge_test_case(args.InputTestCase)
     
-
-
-print("sdasd")
 
 if __name__== "__main__":
     main()

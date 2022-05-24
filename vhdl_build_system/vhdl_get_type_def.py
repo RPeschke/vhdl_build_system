@@ -57,7 +57,7 @@ def vhdl_get_type_alias(rawText):
     words = list(filter(None, words)) 
     ret = {}
     ret["name"] = words[0]
-    sp = rawText.split(" ; ")
+    sp = rawText.split(";")
     if len(sp) ==0:
         raise Exception("end Token not found")
     
@@ -73,12 +73,14 @@ def vhdl_get_type_alias(rawText):
 
 def vhdl_get_type_def_enum(rawText):
     ret = {}
-    ret["name"]='unsopported type'
+    ret["name"]=rawText.split("is")[0].strip()
+    ret["vhdl_type"] = "enum"
+    ret["record"] = [ {"name": x.strip(), "type" :"enum_element" , "InOut" :"" ,"default":""} for x in   rawText.split("(")[1].split(")")[0].split(",")]
     return ret
 
 def vhdl_get_type_def_from_string(FileContent):
     fc =FileContent
-    candidates =  fc.split(" type")
+    candidates =  fc.split(" type ")
     type_list = list()
     for x in candidates:
         ret = {}
@@ -121,11 +123,7 @@ def vhdl_get_type_def_from_string(FileContent):
     return type_list
 
 
-def vhdl_get_type_def(FileName):
 
-    fc = load_file_witout_comments(FileName)
-    ret = vhdl_get_type_def_from_string(fc)
-    return ret
 
 
 

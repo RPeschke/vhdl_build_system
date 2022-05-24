@@ -1,69 +1,17 @@
-
+import pandas as pd
 from .vhdl_dependency_db  import dependency_db
 from .vhdl_get_entity_def import vhdl_get_entity_def
+from .generic_helper import expand_dataframe
 
+from .vhdl_parser import *
 knownName= list()
 
-def expand_types_records(portDef,TypeDef):
-    ret = list()
-    for x in TypeDef['record']:
-        e = {}
-        e['name'] = portDef['name'] + "." + x['name']
-        e['type'] = x['type'] 
-        e['InOut'] =  'in'
-        e['default'] =  None
-        ret.append(e)
 
 
-    return ret
-
-def input_get_constant(numStr):
-    try:
-        i0 = int(numStr)
-    except:
-        for x in knownName:
-            if x["name"] == numStr.strip():
-                i0 = x["value"]
-                return i0
 
 
-        i0 = input("unkown Variable: "+ numStr+"\nplease enter its value:")
-        i0 =input_get_constant(i0)
-        newName = {}
-        newName["name"] = numStr.strip()
-        newName["value"] = i0
-        knownName.append(newName)
-
-    return i0
 
 
-def expand_types_arrays(portDef,TypeDef):
-    ret = list()
-    array_length = TypeDef["array_length"]
-    if "range" in array_length:
-        print("Unbound array")
-
-    sp = array_length.split("downto")
-    if len(sp) == 1:
-         sp = array_length.split("to")
-    i0 = input_get_constant(sp[0])
-    i1 = input_get_constant(sp[1])
-    
-    max_index = max(i0,i1)
-
-    min_index = min(i0,i1)
-
-
-    
-    for x in range(min_index,max_index):
-        e = {}
-        e['name'] = portDef['name'] + "(" + str(x) +")"
-        
-        e['type'] = TypeDef['BaseType']
-        e['InOut'] =  'in'
-        e['default'] =  None
-        ret.append(e)
-    return ret
 
 
 def isPrimitiveType(typeName):
@@ -84,7 +32,7 @@ def isPrimitiveType(typeName):
 
 def get_shortend_typename(portdef):
    
-    ty = portdef["type"]
+    ty = portdef["port_type"]
     if ty == "std_logic":
         return "sl"
     elif "std_logic_vector" in ty:
@@ -93,111 +41,137 @@ def get_shortend_typename(portdef):
     return ty
 
 def set_short_hand(portdef):
-    for x in portdef:
-        x["type_shorthand"]=get_shortend_typename(x)
-
+    portdef["type_shorthand"] = portdef.apply(get_shortend_typename, axis=1) 
     return portdef
 
 def remove_clock_from_ports(ports):
-    ports = [x for x in ports if x["name"] != "clk"]
-    ports = [x for x in ports if x["type"] != "globals_t"]
-    ports = [x for x in ports if x["type"] != "system_globals"]
+    ports = ports[ports["port_name"] != "clk"]
+    ports = ports[ports["port_type"] != "globals_t"]
+    ports = ports[ports["port_type"] != "system_globals"]
     return ports
 
 def port_to_plain_text(ports):
-
-    for x in ports:
-        portName = x["name"] 
-        x["plainName"] = portName.replace(".","_").replace("(","_").replace(")","")
+    ports["plainName"] = ports.apply(lambda x:  x["port_name"].replace(".","_").replace("(","_").replace(")","").replace(" ","") , axis=1)
     return ports
 
-def expand_types(ports):
-    ret = list()
-    for p in ports:
-        if isPrimitiveType(p["type"]):
-            ret.append(p)
-        else:
-            type_def = dependency_db.get_type_from_name(p["type"])
-            
-            if type_def == None:
-                ret.append(p)
-                continue
-            elif type_def["vhdl_type"] == "record":
-                array = expand_types_records(p,type_def)
-                for a in array:
-                    ret.append(a)
-            elif type_def["vhdl_type"] == "array":
-                array = expand_types_arrays(p,type_def)
-                for a in array:
-                    ret.append(a)
 
-            elif type_def["vhdl_type"] == "subtype":
-                p["BaseType"] = type_def["BaseType"]
-                p["type"] = type_def["BaseType"]
-                ret.append(p)
+def expand_types(ports):
+    def expand_name(x):
+        if x["vhdl_type"] == "record":
+            return x["port_name"] + "." + x["sub_name"]
+        if x["vhdl_type"] == "array":
+            return x["port_name"] + "( " + str(x["array_index"]) +" )"
+        return x["port_name"]
+    
+    def determine_size(x):
+        def convert_to_int(int_canditate):
+            try :
+                int_canditate =  int(int_canditate)
                 
-    return ret
+            except:
+                i0 = input("in port: " + x["port_name"]+ "\nunkown Variable: "+ int_canditate  + "\nplease enter its value:")
+                int_canditate =  convert_to_int(i0)
+                
+            return int_canditate
+        
+        if x["vhdl_type"] == "array":
+            if x["first_x"] is not None:
+                first  = convert_to_int(x["first_x"])
+                second  = convert_to_int(x["second_x"])
+                mx = max(first,second)
+                mn = min(first,second)
+                return mx - mn + 1
+               
+            first  = convert_to_int(x["first_y"])
+            second  = convert_to_int(x["second_y"])
+            mx = max(first,second)
+            mn = min(first,second)
+            return mx - mn + 1
+            
+        return 1
+
+    
+
+    ports["isPrimitiveType"] = ports.apply(lambda x: isPrimitiveType(x["basetype"]), axis=1)
+    while sum(ports["isPrimitiveType"] == False) > 0:
+        expandedports = ports[ports.isPrimitiveType==False].merge(dependency_db.df_records, left_on = "basetype" ,right_on = "top_name" )
+        expandedports["array_size"] = expandedports.apply(determine_size, axis=1)
+        expandedports = expand_dataframe(expandedports, {"array_index" : range( expandedports.array_size.max()) } )
+        expandedports = expandedports[expandedports["array_index"] < expandedports.array_size]
+        expandedports["port_name"] = expandedports.apply(expand_name, axis=1)
+        expandedports["port_type"] = expandedports["sub_type"]
+        expandedports["basetype"] = expandedports["basetype_y"]
+        expandedports["direction"] = expandedports["direction_y"]
+        expandedports["first"] = expandedports["first_y"]
+        expandedports["second"] = expandedports["second_y"]
+        expandedports["default"] = ""
+        expandedports = expandedports[["entity_name","generic_or_port","port_name","port_type", 'InOut', "default", "isPrimitiveType","basetype","direction","first","second"]]
+        ports = pd.concat([ports[ports.isPrimitiveType==True],expandedports])
+        ports["isPrimitiveType"] = ports.apply(lambda x: isPrimitiveType(x["port_type"]), axis=1)
+
+    return ports
 
 
 def set_default_value(ports):
     #print(ports)
-    for x in ports:
+    def get_default_value(x):
         if x["default"]:
-            nullValue = x["default"]
-        elif x["type"] == "std_logic":
-            nullValue = "'0'"
-        elif "std_logic_vector" in x["type"] :
-            nullValue = "(others => '0')"
+            return x["default"]
+        elif x["port_type"] == "std_logic":
+            return  "'0'"
+        elif "std_logic_vector" in x["port_type"] :
+            return  "(others => '0')"
         else:
-            nullValue = x["type"]+"_null"
-            
-        x["default"]=nullValue
+            return x["port_type"]+"_null"
+                
 
+
+    ports["default"] = ports.apply(get_default_value, axis=1)
+    
     return ports
         
 
 class vhdl_entity:
     def __init__(self,entityDef):
         if isinstance(entityDef, str):
-            entityDef = vhdl_get_entity_def(entityDef)[0]
-        self.entityDef = entityDef
+            entityDef,r = vhdl_get_entity_def(entityDef)
+        self.entityDef = entityDef[0]
+        self.df_entity = r[r["entity_name"] == r["entity_name"].iloc[0]]
+        df = pd.DataFrame( [[x[0],x[1],x[2],x[3]] for x in  self.df_entity.port_type.apply(extract_baseType)] ,columns = ["basetype", "direction", "first", "second"] )
+        self.df_entity['basetype'] = df["basetype"]
+        self.df_entity['direction'] = df["direction"]
+        self.df_entity['first'] = df["first"]
+        self.df_entity['second'] = df["second"]
 
     def name(self):
-        return self.entityDef["name"]
+        return self.df_entity["entity_name"].iloc[0]
     
     def IsUsingGlobals(self):
-        ports = self.ports()
-        ports = [x for x in ports if x["type"] == "globals_t" or x["type"] == "system_globals"]
-        return len(ports) > 0
+        df = self.df_entity[self.df_entity["generic_or_port"] == "port"]
+        df = df[(df["port_type"] == "globals_t" ) | (df["port_type"] == "system_globals")]
+        return len(df) > 0
 
         
     def get_clock_port(self):
-        ports = self.entityDef["port"]
-        ports = [x for x in ports if x["name"] == "clk" or x["type"] == "globals_t" or x["type"] == "system_globals"]
-        return ports[0]
-
+        df = self.df_entity[self.df_entity["generic_or_port"] == "port"]
+        df = df[(df["port_name"] == "clk"  )  | (df["port_type"] == "globals_t" ) | (df["port_type"] == "system_globals")]
+        return df.iloc[:1]
+        
     def ports(self,RemoveClock=False,ExpandTypes=False, Filter = None):
-        ports = self.entityDef["port"]
+        ports = self.df_entity
         ports = remove_clock_from_ports(ports)  
+        ports = ports[ports["generic_or_port"] == "port"]
         if not RemoveClock:
             clk = self.get_clock_port()
-            ports = [clk] + ports
+            ports = pd.concat( [clk, ports])
             
         
         if Filter:
-            ports = [x for x in ports if Filter(x)]
+            ports = ports[Filter(ports)]
 
         if ExpandTypes:
-            new_length = 100000
-            old_length = len(ports)
-            while new_length >  old_length:
-                old_length = len(ports)
-                ports = expand_types(ports)
-                new_length = len(ports)
-                if new_length < old_length:
-                    raise Exception("ports got removed")
-        
-
+            ports = expand_types(ports)
+            
         
        
         ports = port_to_plain_text(ports)

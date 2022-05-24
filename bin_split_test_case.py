@@ -19,7 +19,7 @@ def main():
 
     split_test_case(args.InputTestCase)
     
-print("sdasd")
+
 
 if __name__== "__main__":
     main()

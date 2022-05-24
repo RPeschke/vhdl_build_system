@@ -1,6 +1,6 @@
 import os
 
-
+import pandas as pd
 
 from .vhdl_get_list_of_files import getListOfFiles
 
@@ -16,63 +16,121 @@ from .vhdl_load_file_without_comments import load_file_witout_comments
 
 
 
-def vhdl_parse_xco(FileName):
-    ret = {}
-    ret["FileName"] = FileName
-    
+def vhdl_parse_xco(FileName, ret1):
+    Modified= os.path.getmtime(FileName)
     baseName = FileName.split("/")[-1].split(".xco")[0]
-    #print(baseName)
     entities_def=[]
     entities_def.append(baseName)
-    ret["entityDef"]= entities_def
-    ret["Type_Def"] = []
-    ret["Type_Def_detail"]=[]
-    ret["packageDef"]=[]
-    ret["packageUSE"]=[]
-    ret["entityUSE"]=[]
-    ret["ComponentUSE"]=[]
-    ret["Modified"] = []
 
+    ret1["symbols"].extend(  [ [ FileName , "entityDef", baseName, Modified ] ] )
+    
 
-    return ret
+def extract_baseType(typestr):
+    sp =typestr.split("(")
+    basetype = sp[0].strip()
+    if len(sp) == 1:
+        return basetype,"","",""
+    sp_downto = sp[1].split(")")[0].split(" downto ")
+    if len(sp_downto) > 1:
+        return basetype,"downto",sp_downto[0].strip(),sp_downto[1].strip()
+        
+    sp_to = sp[1].split(")")[0].split(" to ")
+    if len(sp_to) > 1:
+        return basetype,"to",sp_to[0].strip(),sp_to[1].strip()
 
+    sp_unbound = sp[1].split(")")
+    if len(sp_unbound) > 1:
+        return basetype,sp_unbound[0].strip(),"",""
+    
+    return "","","",""
+    
+    
+def vhdl_parser_types_array(FileName, x, ret1):
+    sub_basetype,sub_direction,sub_first,sub_second =  extract_baseType(x["BaseType"])
 
-def vhdl_parser(FileName):
-    ret = {}
-    ret["FileName"] = FileName
+    basetype = x["BaseType"]+"  (  " + x["array_length"] +"  )  "
+    if len(sub_direction) > 0:
+        ret1["records"].extend(  [ [ FileName , "temp", x["name"]+"$temp" ,x["BaseType"] ,"" ,sub_basetype,sub_direction,sub_first,sub_second  ]  ]  )     
+        basetype = x["name"]+"$temp" +"  (  " + x["array_length"] +"  )  "
+        
+    
+    main_basetype,main_direction,main_first,main_second =  extract_baseType(basetype)
+    ret1["records"].extend(  [ [ FileName ,  x["vhdl_type"], x["name"],basetype,"" ,main_basetype,main_direction,main_first,main_second  ]  ]  )     
+
+def vhdl_parser_types(FileName, ret1):
+    FileContent=load_file_witout_comments(FileName)
+    type_def_detail = vhdl_get_type_def_from_string(FileContent)
+    for x in type_def_detail:
+        if x["vhdl_type"] == "record":
+            for y in x["record"]:
+                basetype,direction,first,second =  extract_baseType(y["type"])
+                ret1["records"].extend(  [ [ FileName ,  x["vhdl_type"], x["name"],y["type"] ,y["name"], basetype,direction,first,second ]  ]  )
+        elif x["vhdl_type"] == "enum":
+            for y in x["record"]:
+                basetype,direction,first,second =  extract_baseType(y["type"])
+                ret1["records"].extend(  [ [ FileName ,  x["vhdl_type"], x["name"],y["type"] ,y["name"],basetype,direction,first,second ]  ]  )                
+        elif x["vhdl_type"] == "array":
+            vhdl_parser_types_array(FileName, x, ret1)
+
+        elif x["vhdl_type"] == "subtype":
+            basetype,direction,first,second =  extract_baseType(x["BaseType"])
+            ret1["records"].extend(  [ [ FileName ,  x["vhdl_type"], x["name"],x["BaseType"],"",basetype,direction,first,second ]  ]  )                 
+        else:
+            raise Exception("Unknown type")
+            
+            
+def vhdl_parser(FileName, ret1={}):
+    
+    
+    
+    Modified= os.path.getmtime(FileName)
+    
     FileContent=load_file_witout_comments(FileName)
     
     entityDef=findDefinitionsInFile(FileContent,"entity","is")
-    ret["entityDef"]=entityDef
+    
+    ret1["symbols"].extend(  [ [ FileName , "entityDef", x,Modified ]   for x in entityDef ] )
     
     Type_Def=findDefinitionsInFile(FileContent,"type","is")
     subType_Def=findDefinitionsInFile(FileContent,"subtype","is")
-    ret["Type_Def"]=Type_Def + subType_Def
+    
+    
+    ret1["symbols"].extend(  [ [ FileName , "Type_Def", x,Modified ]   for x in Type_Def + subType_Def ] )
 
 
     type_def_detail = vhdl_get_type_def_from_string(FileContent)
-    ret["Type_Def_detail"]=type_def_detail
+    
+    vhdl_parser_types(FileName, ret1)
+    #for x in type_def_detail:
+    #    for y in x["record"]:
+    #        ret1["records"].extend(  [ [ FileName ,  x["vhdl_type"], x["name"],y["type"] ,y["name"], Modified ]  ]  )
+            
+    ret1["symbols"].extend(  [ [ FileName , "Type_Def_detail", x["name"],Modified ]   for x in type_def_detail  ] )
 
     packageDef=findDefinitionsInFile(FileContent,"package","is")
-    ret["packageDef"]=packageDef
+    
+    ret1["symbols"].extend(  [ [ FileName , "packageDef", x , Modified]   for x in packageDef  ] )
 
     packageUSE=findDefinitionsInFile(FileContent,"work.","all",".")
-    ret["packageUSE"]=packageUSE
+    
+    
+    ret1["symbols"].extend(  [ [ FileName , "packageUSE", x , Modified]   for x in packageUSE  ] )
 
 
 
     entityUSE_G=findDefinitionsInFile(FileContent,"entity","generic")
     entityUSE=findDefinitionsInFile(FileContent,"entity","port")
     entityUSE2=findDefinitionsInFile(FileContent,"entity","(")
-    ret["entityUSE"]=entityUSE + entityUSE_G +entityUSE2
+    
+    ret1["symbols"].extend(  [ [ FileName , "entityUSE", x,Modified ]   for x in entityUSE + entityUSE_G +entityUSE2  ] )
     
     ComponentUSE=findDefinitionsInFile(FileContent,"component","is")
     ComponentUSE_G=findDefinitionsInFile(FileContent,"component","generic")
     ComponentUSE_P=findDefinitionsInFile(FileContent,"component","port")
-    ret["ComponentUSE"]=ComponentUSE +ComponentUSE_G +ComponentUSE_P
     
-    ret["Modified"] = os.path.getmtime(FileName)
-    return ret
+    ret1["symbols"].extend(  [ [ FileName , "ComponentUSE", x ,Modified]   for x in ComponentUSE +ComponentUSE_G +ComponentUSE_P  ] )
+    
+    
 
 
 def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
@@ -92,43 +150,44 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
 
 
 
-def vhdl_parse_folder(database, Folder = "."):
-
+def vhdl_parse_folder( Folder = ".", verbose = False):
+    ret1 ={
+        "symbols" : [],
+        "records": []
+    }
     print ( '<vhdl_parse_folder FolderName="'+ Folder +'">')
 
     print ( '  <getListOfFiles> ')
     flist = getListOfFiles(Folder,"*.vhd")
 
     print ( '  </getListOfFiles> ')
-    keys = database.keys()
+
     for f in flist:
         if "build/" in f:
             continue
         
         if "verif/" in f:
             continue
-            #print(f)
-        if f in keys:
-            modTime_file = os.path.getmtime(f)
-            modFile_db = database[f]["Modified"]
-            
-            if modTime_file == modFile_db:
-                continue
-            
-        print("process file: ",f)
-        ret= vhdl_parser(f)
-        database[f] = ret
-    
+
+
+        if verbose:    
+            print("process file: ",f)
+        
+        vhdl_parser(f,ret1)
+
     flist = getListOfFiles(Folder,"*.xco*")
     for f in flist:
         if "build/" not in f:
-            ret = vhdl_parse_xco(f)
-            #print(f)
-            database[f] = ret
-    
+            vhdl_parse_xco(f,ret1)
 
     
+
+    df = pd.DataFrame(ret1["symbols"], columns = ["filename","type","name", "data"])
+    df["name"] = df.apply(lambda x: x["name"].replace("work.",""), axis=1)
+     
+    df_records = pd.DataFrame(ret1["records"], columns = ["FileName" ,  "vhdl_type", "top_name","sub_type" ,"sub_name" ,"basetype" ,"direction" ,"first" ,"second" ])
+    
     print ( '</vhdl_parse_folder>')
-    return database
+    return df,df_records
 
 
