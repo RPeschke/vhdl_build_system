@@ -94,10 +94,10 @@ def vhdl_get_entity_def(FileName):
             full_entity = x.split(" end ")[0]
         
 
-            generic = get_list(full_entity,"generic")
+            generic = get_list(full_entity," generic ")
             ret["generic"] = generic
 
-            ports = get_list(full_entity,"port")
+            ports = get_list(full_entity," port ")
             ret["port"] = ports
 
 

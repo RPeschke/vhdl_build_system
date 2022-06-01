@@ -1,6 +1,6 @@
 def load_file_witout_comments(FileName):
     FileContent = ""
-    with open(FileName, "r") as f:
+    with open(FileName, "r", encoding="utf-8") as f:
         contents =f.readlines()
         for x in contents:
             FileContent+= x.split("--")[0].split("\r\n")[0].split("\n")[0] + " "
