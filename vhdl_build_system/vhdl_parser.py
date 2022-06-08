@@ -10,7 +10,7 @@ from .vhdl_get_type_def import vhdl_get_type_def_from_string
 
 from .vhdl_load_file_without_comments import load_file_witout_comments
 
-
+from .generic_helper import get_text_between_outtermost
 
 
 
@@ -30,15 +30,16 @@ def extract_baseType(typestr):
     basetype = sp[0].strip()
     if len(sp) == 1:
         return basetype,"","",""
-    sp_downto = sp[1].split(")")[0].split(" downto ")
+    sp_downto = get_text_between_outtermost(typestr,'(',')').split(" downto ")
     if len(sp_downto) > 1:
         return basetype,"downto",sp_downto[0].strip(),sp_downto[1].strip()
-        
-    sp_to = sp[1].split(")")[0].split(" to ")
+    
+    sp_to = get_text_between_outtermost(typestr,'(',')').split(" to ")     
+    
     if len(sp_to) > 1:
         return basetype,"to",sp_to[0].strip(),sp_to[1].strip()
 
-    sp_unbound = sp[1].split(")")
+    sp_unbound = get_text_between_outtermost(typestr,'(',')')
     if len(sp_unbound) > 1:
         return basetype,sp_unbound[0].strip(),"",""
     
