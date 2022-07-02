@@ -13,12 +13,14 @@ class dependency_db_cl:
         self.reparse_files()
         self.df = pd.read_pickle(self.FileName + ".pkl")
         self.df_records = pd.read_pickle(self.FileName + "_records.pkl")
+        self.df_constants = pd.read_pickle(self.FileName + "_constants.pkl")
 
 
     def reparse_files(self):
-        df,df_records =  vhdl_parse_folder()
+        df,df_records,df_constants =  vhdl_parse_folder()
         df.to_pickle(self.FileName + ".pkl")
         df_records.to_pickle(self.FileName + "_records.pkl")
+        df_constants.to_pickle(self.FileName + "_constants.pkl")
 
 
     def entity2FileName(self, entityName):
