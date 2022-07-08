@@ -256,8 +256,8 @@ if [ "$5" != "" ]; then
     port="$5"
 fi
 
-dos2unix firmware-ethernet/scripts/udp_run.py
-scp firmware-ethernet/scripts/udp_run.py {RunPcSsh}:{RunPcRemote}/
+dos2unix vhdl_build_system/firmware-ethernet/scripts/udp_run.py
+scp vhdl_build_system/firmware-ethernet/scripts/udp_run.py {RunPcSsh}:{RunPcRemote}/
 
 scp {buildpath}/$1/$1.csv {RunPcSsh}:{RunPcRemote}/
 
