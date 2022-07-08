@@ -1,0 +1,189 @@
+NET SCLK<0>				LOC= K3;		     
+NET SHOUT<0>				LOC= F3;	 
+NET SIN<0>				LOC= M3;		     
+NET PCLK<0>				LOC= H3;		# TDC1_PCLK,	J1_098_K1                                  
+NET SCLK<1>				LOC= L3;		     
+NET SHOUT<1>				LOC= G3;	     
+NET SIN<1>				LOC= N3;		     
+NET PCLK<1>				LOC= J3;		# TDC2_PCLK,	J1_078_N5                                  
+NET SCLK<2>				LOC= G2;		     
+NET SHOUT<2>				LOC= H1;	     
+NET SIN<2>				LOC= F1;		     
+NET PCLK<2>				LOC= G1;		# TDC3_PCLK,	J1_026_AD1                                
+NET SCLK<3>				LOC= U8;		     
+NET SHOUT<3>				LOC= V7;	     
+NET SIN<3>				LOC= U9;		     
+NET PCLK<3>				LOC= U5;		# TDC4_PCLK,	J1_042_N4                                  
+NET SCLK<4>					LOC= R10;	          
+NET SHOUT<4>				LOC= R8;	        
+NET SIN<4>					LOC= P3;	          
+NET PCLK<4>					LOC= R9;								# TDC5_PCLK,	                                  
+NET SCLK<5>					LOC= N20;	
+NET SHOUT<5>				LOC= P21;	
+NET SIN<5>					LOC= E1;	                
+#NET SIN<5>					LOC= AF23;								# TDC6_SIN,	 # use this for MB Rev B                 
+NET PCLK<5>					LOC= U21;								# TDC6_PCLK,	                    
+NET SCLK<6>					LOC= W24;	        
+NET SHOUT<6>				LOC= V21;	
+NET SIN<6>					LOC= V23;	        
+NET PCLK<6>					LOC= AC23;								# TDC7_PCLK,	                                
+NET SCLK<7>					LOC= AC26;
+NET SHOUT<7>				LOC= AA26;
+NET SIN<7>					LOC= AC25;
+NET PCLK<7>					LOC= AB26;								# TDC8_PCLK,	                       
+NET SCLK<8>					LOC= M26;	 
+NET SHOUT<8>				LOC= L25;	
+NET SIN<8>					LOC= N25;	   
+NET PCLK<8>					LOC= L26;								# TDC9_PCLK,	                         
+NET SCLK<9>					LOC= AB24;
+NET SHOUT<9>				LOC= Y24;	
+NET SIN<9>					LOC= AC24;
+NET PCLK<9>					LOC= AA24;								# TDC10_PCLK,	
+
+
+NET BUSA_CLR				LOC= N9;		# BUSA_CLR                                 
+           
+NET BUSA_DO<0>				LOC= N7;		# BUSA_DO_1                               
+NET BUSA_DO<1>				LOC= N6;		# BUSA_DO_2                                  
+NET BUSA_DO<2>				LOC= N5;		# BUSA_DO_3                                
+NET BUSA_DO<3>				LOC= N4;		# BUSA_DO_4                             
+NET BUSA_DO<4>				LOC= P10;		# BUSA_DO_5                              
+NET BUSA_DO<5>				LOC= P8;		# BUSA_DO_6,	J2_009_AF5                                
+NET BUSA_DO<6>				LOC= P6;		# BUSA_DO_7,	J2_011_AE5                                
+NET BUSA_DO<7>				LOC= P5;		# BUSA_DO_8,	J2_012_AF6                                
+NET BUSA_DO<8>				LOC= AA6;		# BUSA_DO_9,	J2_013_AD6                                
+NET BUSA_DO<9>				LOC= W8;		# BUSA_DO_10,	J2_015_AA10                            
+NET BUSA_DO<10>				LOC= W7;		# BUSA_DO_11,	J2_016_AA9                              
+NET BUSA_DO<11>				LOC= AD3;		# BUSA_DO_12,	J2_017_V11                              
+NET BUSA_DO<12>				LOC= AC4;		# BUSA_DO_13,	J2_019_Y11                              
+NET BUSA_DO<13>				LOC= AC3;		# BUSA_DO_14,	J2_020_AB13                            
+NET BUSA_DO<14>				LOC= AB5;		# BUSA_DO_15,	J2_021_V12                              
+NET BUSA_DO<15>				LOC= AB4;		# BUSA_DO_16,	J2_023_AA12           
+NET BUSA_RD_COLSEL_S<0>				LOC= T6;		# BUSA_RD_CS_S0,	J2_088_W10 
+NET BUSA_RD_COLSEL_S<1>				LOC= R3;		# BUSA_RD_CS_S1,	J2_089_W9
+NET BUSA_RD_COLSEL_S<3>				LOC= T4;		# BUSA_RD_CS_S2,	J2_090_Y9
+NET BUSA_RD_COLSEL_S<2>				LOC= U7;		# BUSA_RD_CS_S3,	J2_092_AA8
+NET BUSA_RD_COLSEL_S<4>				LOC= U4;		# BUSA_RD_CS_S4,	J2_093_AB7
+NET BUSA_RD_COLSEL_S<5>				LOC= V5;		# BUSA_RD_CS_S5,	J2_094_AC6                 
+NET BUSA_RD_ENA						LOC= M10;		# BUSA_RD_ENA,	J2_082_AA11                
+NET BUSA_RD_ROWSEL_S<0>				LOC= AD1;		# BUSA_RD_RS_S0,	J2_084_V10                 
+NET BUSA_RD_ROWSEL_S<1>				LOC= AE1;		# BUSA_RD_RS_S1,	J2_085_AB9                 
+NET BUSA_RD_ROWSEL_S<2>				LOC= AE2;		# BUSA_RD_RS_S2,	J2_086_AB11                
+NET BUSA_SAMPLESEL_S<0>				LOC= AA4;		# BUSA_SAMPLESEL_S1,	J2_076_V13                
+NET BUSA_SAMPLESEL_S<1>				LOC= AA3;		# BUSA_SAMPLESEL_S2,	J2_077_Y12                
+NET BUSA_SAMPLESEL_S<2>				LOC= Y6;		# BUSA_SAMPLESEL_S3,	J2_078_Y13                
+NET BUSA_SAMPLESEL_S<3>				LOC= Y5;		# BUSA_SAMPLESEL_S4,	J2_080_W12                
+NET BUSA_SAMPLESEL_S<4>				LOC= W3;		# BUSA_SAMPLESEL_S5,	J2_081_AA13              
+
+NET BUSA_SR_CLEAR					LOC= AA7;		# BUSA_SR_CLEAR,	J3_019_Y6  
+NET BUSA_SR_SEL						LOC= AB11;		# BUSA_SR_SEL,	J3_020_K9                  
+
+NET BUS_REGCLR				        LOC= M9; 
+
+NET BUSA_RAMP				LOC=AC2;		# BUSA_RAMP,	J2_097_W7   
+NET BUSA_WR_ADDRCLR					LOC= U3;		# BUSA_WR_ADDRCLR,	J2_096_AD5    
+
+NET WR1_ENA<0>				LOC= K5;		# TDC1_WR1_ENA,	J1_107_E2                            
+NET WR2_ENA<0>				LOC= H5;		# TDC1_WR2_ENA,	J1_109_B2       
+
+####TARGETX Daughtercard#1
+NET SAMPLESEL_ANY<0>		LOC= L6;		# TDC1_SAMPLESEL_ANY,	J1_102_H1                
+NET SR_CLOCK<0>				LOC= H6;		# TDC1_SR_CLOCK,	J1_103_G2
+NET SAMPLESEL_ANY<1>		LOC= M6;		# TDC2_SAMPLESEL_ANY,	J1_083_K3                
+NET SR_CLOCK<1>				LOC= K6;		# TDC2_SR_CLOCK,	J1_082_L3     
+NET SAMPLESEL_ANY<2>		LOC= M1;		# TDC3_SAMPLESEL_ANY,	J1_010_T1                
+NET SR_CLOCK<2>				LOC= N2;		# TDC3_SR_CLOCK,	J1_014_V1                          
+NET SAMPLESEL_ANY<3>		LOC= R2;		# TDC4_SAMPLESEL_ANY,	J1_047_T4                
+NET SR_CLOCK<3>				LOC= U1;		# TDC4_SR_CLOCK,	J1_054_Y5       
+NET SAMPLESEL_ANY<4>		LOC= AB3;		# TDC5_SAMPLESEL_ANY,	                
+NET SR_CLOCK<4>				LOC= AA10;		# TDC5_SR_CLOCK,
+
+                      
+NET WL_CLK_N<0>				LOC= AF5 | IOSTANDARD = LVDS_25;		# TDC1_WL_CLK_N,	J1_093_N1
+NET WL_CLK_P<0>				LOC= AE5 | IOSTANDARD = LVDS_25;		# TDC1_WL_CLK_P,	J1_091_N2
+
+
+                     
+NET WL_CLK_N<1>				LOC= AD5 | IOSTANDARD = LVDS_25;		# TDC2_WL_CLK_N,	J1_062_AC4
+NET WL_CLK_P<1>             LOC= AC5 | IOSTANDARD = LVDS_25;        # TDC2_WL_CLK_P, J1_063_AB5  
+
+
+NET WL_CLK_N<2>				LOC= Y13 | IOSTANDARD = LVDS_25;		# TDC3_WL_CLK_N,	J1_011_U1                          
+NET WL_CLK_P<2>				LOC= W14 | IOSTANDARD = LVDS_25;		# TDC3_WL_CLK_P,	J1_012_U2     
+   
+NET WL_CLK_N<3>				LOC= AA16 | IOSTANDARD = LVDS_25;		# TDC4_WL_CLK_N,	J1_019_AA1                        
+NET WL_CLK_P<3>				LOC= Y15 | IOSTANDARD = LVDS_25;		# TDC4_WL_CLK_P,	J1_020_AA2         
+
+NET WL_CLK_N<4>				LOC= AB9 | IOSTANDARD = LVDS_25;		# TDC5_WL_CLK_N,         
+NET WL_CLK_P<4>				LOC= AA9 | IOSTANDARD = LVDS_25;		# TDC5_WL_CLK_P,
+
+NET WL_CLK_N<5>				LOC= AC22 | IOSTANDARD = LVDS_25;		# TDC6_WL_CLK_N,                   
+NET WL_CLK_P<5>				LOC= AB22 | IOSTANDARD = LVDS_25;		# TDC6_WL_CLK_P,
+
+NET WL_CLK_N<6>				LOC= Y20  | IOSTANDARD = LVDS_25;		# TDC7_WL_CLK_N,              
+NET WL_CLK_P<6>				LOC= W20  | IOSTANDARD = LVDS_25;		# TDC7_WL_CLK_P,
+
+NET WL_CLK_N<7>				LOC= AB17 | IOSTANDARD = LVDS_25;		# TDC8_WL_CLK_N,                 
+NET WL_CLK_P<7>				LOC= AA18 | IOSTANDARD = LVDS_25;		# TDC8_WL_CLK_P,
+
+NET WL_CLK_N<8>				LOC= AB15	| IOSTANDARD = LVDS_25;		# TDC9_WL_CLK_N,                   
+NET WL_CLK_P<8>				LOC= AA15	| IOSTANDARD = LVDS_25;		# TDC9_WL_CLK_P,
+
+NET WL_CLK_N<9>				LOC= V15	| IOSTANDARD = LVDS_25;		# TDC10_WL_CLK_N,	                   
+NET WL_CLK_P<9>				LOC= V14	| IOSTANDARD = LVDS_25;		# TDC10_WL_CLK_P,	   
+
+
+NET gtTxP     LOC = B6;
+NET gtTxN     LOC = A6;
+NET gtRxP     LOC = D7;
+NET gtRxN     LOC = C7;
+NET gtClkP    LOC = D11;
+NET gtClkN    LOC = C11;
+NET fabClkP   LOC = T3;
+NET fabClkN   LOC = T1;
+NET txDisable LOC = E8   | IOSTANDARD = LVCMOS33;
+#NET led<0>    LOC = F18  | IOSTANDARD = LVCMOS33;
+#NET led<1>    LOC = E18  | IOSTANDARD = LVCMOS33;
+#NET led<2>    LOC = G16  | IOSTANDARD = LVCMOS33;
+#NET led<3>    LOC = F17  | IOSTANDARD = LVCMOS33;
+#NET led<4>    LOC = F20  | IOSTANDARD = LVCMOS33;
+#NET led<5>    LOC = E20  | IOSTANDARD = LVCMOS33;
+#NET led<6>    LOC = H17  | IOSTANDARD = LVCMOS33;
+#NET led<7>    LOC = G17  | IOSTANDARD = LVCMOS33;
+#NET led<8>    LOC = C21  | IOSTANDARD = LVCMOS33;
+#NET led<9>    LOC = B21  | IOSTANDARD = LVCMOS33;
+#NET led<10>   LOC = H18  | IOSTANDARD = LVCMOS33;
+#NET led<11>   LOC = H19  | IOSTANDARD = LVCMOS33;
+#NET led<12>   LOC = B22  | IOSTANDARD = LVCMOS33;
+#NET led<13>   LOC = A22  | IOSTANDARD = LVCMOS33;
+#NET led<14>   LOC = G19  | IOSTANDARD = LVCMOS33;
+#NET led<15>   LOC = F19  | IOSTANDARD = LVCMOS33;
+
+NET SSTIN_N<0>				LOC= AA12 | IOSTANDARD = LVDS_25;		# TDC1_SSTIN_N,	J1_007_R1
+NET SSTIN_P<0>				LOC= Y12 | IOSTANDARD = LVDS_25;		# TDC1_SSTIN_P,	J1_008_R2
+NET SSTIN_N<1>				LOC= AF4 | IOSTANDARD = LVDS_25;		# TDC2_SSTIN_N,	J1_069_W3 
+NET SSTIN_P<1>				LOC= AD4 | IOSTANDARD = LVDS_25;		# TDC2_SSTIN_P,	J1_070_V4
+NET SSTIN_N<2>				LOC= AF6 | IOSTANDARD = LVDS_25;		# TDC3_SSTIN_N,	J1_015_W1 
+NET SSTIN_P<2>				LOC= AD6 | IOSTANDARD = LVDS_25;		# TDC3_SSTIN_P,	J1_016_W2
+NET SSTIN_N<3>				LOC= AC6 | IOSTANDARD = LVDS_25;		# TDC4_SSTIN_N,	J1_023_AC1
+NET SSTIN_P<3>				LOC= AB7 | IOSTANDARD = LVDS_25;		# TDC4_SSTIN_P,	J1_024_AC2
+NET SSTIN_N<4>				LOC= W9  | IOSTANDARD = LVDS_25;		# TDC5_SSTIN_N
+NET SSTIN_P<4>				LOC= W10 | IOSTANDARD = LVDS_25;		# TDC5_SSTIN_P
+NET SSTIN_N<5>				LOC= AB21 | IOSTANDARD = LVDS_25;		# TDC6_SSTIN_N,	                  
+NET SSTIN_P<5>				LOC= AA21 | IOSTANDARD = LVDS_25;		# TDC6_SSTIN_P,	                  
+NET SSTIN_N<6>				LOC= AB19 | IOSTANDARD = LVDS_25;		# TDC7_SSTIN_N,	            
+NET SSTIN_P<6>				LOC= AA19 | IOSTANDARD = LVDS_25;		# TDC7_SSTIN_P,	            
+NET SSTIN_N<7>				LOC= W18  | IOSTANDARD = LVDS_25;		# TDC8_SSTIN_N,	               
+NET SSTIN_P<7>				LOC= W17  | IOSTANDARD = LVDS_25;		# TDC8_SSTIN_P,	               
+NET SSTIN_N<8>				LOC= Y16	| IOSTANDARD = LVDS_25;		# TDC9_SSTIN_N,	               
+NET SSTIN_P<8>				LOC= W16	| IOSTANDARD = LVDS_25;		# TDC9_SSTIN_P,	               
+NET SSTIN_N<9>				LOC= AA13 	| IOSTANDARD = LVDS_25;		# TDC10_SSTIN_N,	                     
+NET SSTIN_P<9>				LOC= AB13	| IOSTANDARD = LVDS_25;		# TDC10_SSTIN_P,	                     
+
+
+
+
+NET "fabClk" TNM_NET="fabClk"; 
+TIMESPEC "TS_fabClk"=PERIOD "fabClk" 8 ns HIGH 50 %; 
+NET "U_S6EthTop/U_GtpS6/usrClkSource" TNM_NET="U_GtpS6/usrClkSource";
+TIMESPEC "TS_usrClkSource"=PERIOD "U_GtpS6/usrClkSource" 8 ns HIGH 50 %;
