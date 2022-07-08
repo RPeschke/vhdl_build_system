@@ -4,26 +4,7 @@ use ieee.numeric_std.all;
 use work.AXI4LITE_pac.all;
 
 
-entity exporter_v2_0 is
-	generic (
-		-- Users to add parameters here
-
-		-- User parameters ends
-		-- Do not modify the parameters beyond this line
-
-
-		-- Parameters of Axi Slave Bus Interface S00_AXI
-		C_S00_AXI_DATA_WIDTH	: integer	:= 32;
-		C_S00_AXI_ADDR_WIDTH	: integer	:= 4;
-
-		-- Parameters of Axi Master Bus Interface M00_AXI
-		C_M00_AXI_START_DATA_VALUE	: std_logic_vector	:= x"AA000000";
-		C_M00_AXI_TARGET_SLAVE_BASE_ADDR	: std_logic_vector	:= x"40000000";
-		C_M00_AXI_ADDR_WIDTH	: integer	:= 32;
-		C_M00_AXI_DATA_WIDTH	: integer	:= 32;
-		C_M00_AXI_TRANSACTIONS_NUM	: integer	:= 4
-	);
-	port (
+entity exporter_v2_0 is port (
 		-- Users to add ports here
 
 		-- User ports ends
@@ -33,58 +14,36 @@ entity exporter_v2_0 is
 		-- Ports of Axi Slave Bus Interface S00_AXI
 		s00_axi_aclk	: in std_logic;
 		s00_axi_aresetn	: in std_logic;
-		s00_axi_awaddr	: in std_logic_vector(C_S00_AXI_ADDR_WIDTH-1 downto 0);
+		s00_axi_awaddr	: in std_logic_vector(AXI4LITE_ADDR_IN_WIDTH-1 downto 0);
 		s00_axi_awprot	: in std_logic_vector(2 downto 0);
 		s00_axi_awvalid	: in std_logic;
 		s00_axi_awready	: out std_logic;
-		s00_axi_wdata	: in std_logic_vector(C_S00_AXI_DATA_WIDTH-1 downto 0);
-		s00_axi_wstrb	: in std_logic_vector((C_S00_AXI_DATA_WIDTH/8)-1 downto 0);
+		s00_axi_wdata	: in std_logic_vector(AXI4LITE_RDATA_WIDTH-1 downto 0);
+		s00_axi_wstrb	: in std_logic_vector((AXI4LITE_RDATA_WIDTH/8)-1 downto 0);
 		s00_axi_wvalid	: in std_logic;
 		s00_axi_wready	: out std_logic;
 		s00_axi_bresp	: out std_logic_vector(1 downto 0);
 		s00_axi_bvalid	: out std_logic;
 		s00_axi_bready	: in std_logic;
-		s00_axi_araddr	: in std_logic_vector(C_S00_AXI_ADDR_WIDTH-1 downto 0);
+		s00_axi_araddr	: in std_logic_vector(AXI4LITE_ADDR_IN_WIDTH-1 downto 0);
 		s00_axi_arprot	: in std_logic_vector(2 downto 0);
 		s00_axi_arvalid	: in std_logic;
 		s00_axi_arready	: out std_logic;
-		s00_axi_rdata	: out std_logic_vector(C_S00_AXI_DATA_WIDTH-1 downto 0);
+		s00_axi_rdata	: out std_logic_vector(AXI4LITE_RDATA_WIDTH-1 downto 0);
 		s00_axi_rresp	: out std_logic_vector(1 downto 0);
 		s00_axi_rvalid	: out std_logic;
 		s00_axi_rready	: in std_logic;
 
         -- Ports of Axi Master Bus Interface name   
-        m00_axi_m2s  : out std_logic_vector(AXI4LITE_steering_signals_m2s_length  + C_M00_AXI_ADDR_WIDTH +C_M00_AXI_ADDR_WIDTH +C_M00_AXI_DATA_WIDTH downto  0) := (others => '0');
---    C_M00_AXI_ADDR_WIDTH 
---    + 1
---    + 1
---    + C_M00_AXI_ADDR_WIDTH
---    + 1
---    + C_M00_AXI_ADDR_WIDTH
---    + 1  
---    + 4 
---    + 1  
---    - 1  downto 0) := (others => '0');
-    
-    
-    
-        m00_axi_s2m  : in std_logic_vector(AXI4LITE_steering_signals_s2m_length + C_M00_AXI_DATA_WIDTH downto  0)  := (others => '0')
---             1
---    +  C_M00_AXI_DATA_WIDTH 
---    + 1 
---    + 2 
---    + 1 
---    + 1 
---    + 2 
---    + 1 
---    - 1  downto 0):= (others => '0')
+        m00_axi_m2s  : out std_logic_vector(AXI4LITE_steering_signals_m2s_length  + AXI4LITE_ADDR_WIDTH +AXI4LITE_ADDR_WIDTH +AXI4LITE_RDATA_WIDTH downto  0) := (others => '0');
+        m00_axi_s2m  : in  std_logic_vector(AXI4LITE_steering_signals_s2m_length  + AXI4LITE_RDATA_WIDTH                                           downto  0)  := (others => '0')
 		
 	);
 end exporter_v2_0;
 
 architecture arch_imp of exporter_v2_0 is
-signal C_M00_AXI_m2s : AXI4LITE_m2s;
-signal C_M00_AXI_s2m : AXI4LITE_s2m;
+signal C_M00_AXI_m2s : AXI4LITE_m2s := AXI4LITE_m2s_null;
+signal C_M00_AXI_s2m : AXI4LITE_s2m := AXI4LITE_s2m_null;
 begin
 C_M00_AXI_m2s.S_AXI_AR.S_AXI_ARADDR(s00_AXI_ARADDR'range) <= s00_AXI_ARADDR;
 C_M00_AXI_m2s.S_AXI_AR.S_AXI_ARVALID                      <= s00_AXI_ARVALID;

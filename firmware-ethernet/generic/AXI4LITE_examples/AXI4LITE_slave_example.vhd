@@ -61,7 +61,9 @@ if rising_edge(clk) then
         elsif rx_addr = x"00000008" then 
           set_read_data(rx, i_slv_reg2_o);          
         elsif rx_addr = x"0000000c" then 
-          set_read_data(rx, i_slv_reg3_o);          
+          set_read_data(rx, i_slv_reg3_o);     
+        else      
+          set_read_data(rx, rx_addr);
         end if;
     end if;
     if is_receiving_data(rx) then 

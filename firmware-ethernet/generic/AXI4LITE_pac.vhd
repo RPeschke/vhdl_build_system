@@ -6,6 +6,8 @@ package AXI4LITE_pac is
 
 constant AXI4LITE_ADDR_WIDTH : integer := 32;
 constant AXI4LITE_RDATA_WIDTH : integer := 32;
+constant AXI4LITE_ADDR_IN_WIDTH : integer := 16;
+
 
 constant AXI4LITE_steering_signals_m2s_length : integer := 8;
 constant AXI4LITE_steering_signals_s2m_length : integer := 8;
