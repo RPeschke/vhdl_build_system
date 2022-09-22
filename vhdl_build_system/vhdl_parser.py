@@ -1,3 +1,4 @@
+from asyncio import constants
 import os
 
 import pandas as pd
@@ -10,7 +11,7 @@ from .vhdl_get_type_def import vhdl_get_type_def_from_string
 
 from .vhdl_load_file_without_comments import load_file_witout_comments
 
-
+from .generic_helper import get_text_between_outtermost
 
 
 
@@ -30,15 +31,16 @@ def extract_baseType(typestr):
     basetype = sp[0].strip()
     if len(sp) == 1:
         return basetype,"","",""
-    sp_downto = sp[1].split(")")[0].split(" downto ")
+    sp_downto = get_text_between_outtermost(typestr,'(',')').split(" downto ")
     if len(sp_downto) > 1:
         return basetype,"downto",sp_downto[0].strip(),sp_downto[1].strip()
-        
-    sp_to = sp[1].split(")")[0].split(" to ")
+    
+    sp_to = get_text_between_outtermost(typestr,'(',')').split(" to ")     
+    
     if len(sp_to) > 1:
         return basetype,"to",sp_to[0].strip(),sp_to[1].strip()
 
-    sp_unbound = sp[1].split(")")
+    sp_unbound = get_text_between_outtermost(typestr,'(',')')
     if len(sp_unbound) > 1:
         return basetype,sp_unbound[0].strip(),"",""
     
@@ -77,7 +79,19 @@ def vhdl_parser_types(FileName, ret1):
             ret1["records"].extend(  [ [ FileName ,  x["vhdl_type"], x["name"],x["BaseType"],"",basetype,direction,first,second ]  ]  )                 
         else:
             raise Exception("Unknown type")
-            
+
+def vhdl_parser_constants(FileName, ret1):
+    FileContent=load_file_witout_comments(FileName)   
+    consts = FileContent.split("constant")[1:]     
+    for x in consts:
+        x = x.split(";")[0].strip()
+        sp = x.split(":")
+        
+        try:
+            ret1["constants"].extend(  [ [ FileName ,  sp[0].strip() , sp[1].strip(), sp[2][1:].strip() ]  ]  )
+        except:
+            print("Error in reading constants in file: " + FileName)
+    
             
 def vhdl_parser(FileName, ret1={}):
     
@@ -101,6 +115,7 @@ def vhdl_parser(FileName, ret1={}):
     type_def_detail = vhdl_get_type_def_from_string(FileContent)
     
     vhdl_parser_types(FileName, ret1)
+    vhdl_parser_constants(FileName, ret1)
     #for x in type_def_detail:
     #    for y in x["record"]:
     #        ret1["records"].extend(  [ [ FileName ,  x["vhdl_type"], x["name"],y["type"] ,y["name"], Modified ]  ]  )
@@ -153,7 +168,8 @@ def findDefinitionsInFile(FileContent,prefix,suffix,delimiter=" ",offset = 0):
 def vhdl_parse_folder( Folder = ".", verbose = False):
     ret1 ={
         "symbols" : [],
-        "records": []
+        "records": [],
+        "constants": []
     }
     print ( '<vhdl_parse_folder FolderName="'+ Folder +'">')
 
@@ -186,8 +202,9 @@ def vhdl_parse_folder( Folder = ".", verbose = False):
     df["name"] = df.apply(lambda x: x["name"].replace("work.",""), axis=1)
      
     df_records = pd.DataFrame(ret1["records"], columns = ["FileName" ,  "vhdl_type", "top_name","sub_type" ,"sub_name" ,"basetype" ,"direction" ,"first" ,"second" ])
+    df_constants = pd.DataFrame(ret1["constants"], columns = ["FileName" ,   "constant_name", "top_name" ,"default" ])
     
     print ( '</vhdl_parse_folder>')
-    return df,df_records
+    return df,df_records,df_constants
 
 

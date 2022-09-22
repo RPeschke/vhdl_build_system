@@ -1,0 +1,3 @@
+usrRst,rxData,rxDataValid,rxDataLast,rxDataReady,txData,txDataValid,txDataLast,txDataReady,myId,regAddr,regWrData,regRdData,regReq,regOp,regAck
+sl,slv(31 downto 0),sl,sl,sl,slv(31 downto 0),sl,sl,sl, slv(15 downto 0), slv(15 downto 0), slv(15 downto 0), slv(15 downto 0),sl,sl,sl
+in,in,in,in,out,out,out,out,in,in,out,out,in,out,out,in

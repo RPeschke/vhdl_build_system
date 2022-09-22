@@ -94,8 +94,9 @@ def expand_types(ports):
     
 
     ports["isPrimitiveType"] = ports.apply(lambda x: isPrimitiveType(x["basetype"]), axis=1)
+    df_records = dependency_db.df_records.drop_duplicates(["vhdl_type","top_name","sub_name","basetype"])
     while sum(ports["isPrimitiveType"] == False) > 0:
-        expandedports = ports[ports.isPrimitiveType==False].merge(dependency_db.df_records, left_on = "basetype" ,right_on = "top_name" )
+        expandedports = ports[ports.isPrimitiveType==False].merge(df_records, left_on = "basetype" ,right_on = "top_name" )
         expandedports["array_size"] = expandedports.apply(determine_size, axis=1)
         expandedports = expand_dataframe(expandedports, {"array_index" : range( expandedports.array_size.max()) } )
         expandedports = expandedports[expandedports["array_index"] < expandedports.array_size]

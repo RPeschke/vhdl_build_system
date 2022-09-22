@@ -1,0 +1,3 @@
+usrRst,rxData,rxDataValid,rxDataLast,txDataReady,myId,regRdData,regAck
+sl,slv(31 downto 0),sl,sl,sl,slv(15 downto 0),slv(15 downto 0),sl
+
