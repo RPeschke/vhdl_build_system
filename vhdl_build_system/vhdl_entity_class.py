@@ -23,7 +23,8 @@ def isPrimitiveType(typeName):
         return True
     elif  " slv " in  " " + typeName:
         return True
-
+    elif  " signed " in  " " +typeName:
+        return True
     return False
 
 
