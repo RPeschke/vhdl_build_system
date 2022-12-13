@@ -50,8 +50,8 @@ begin
     ren   => ren,
     dout  => dout,
     full  => full,
-    empty => empty,
-     counter => counter
+    empty => empty
+    
   );
   din      <= RX_Data & RX_Last;
   wen      <= RX_Valid when full = '0' else '0';

@@ -93,8 +93,8 @@ class vhdl_run_csv:
         return df_out
     
     def get_record(self, prefix, valid  = None, global_signals=[]):
-        if self.df_out is None:
-            self.load_output()
+
+        self.load_output()
         
         df =  self.df_out    
         hit_1d_out_l = [x for x in df.columns if prefix in x]
